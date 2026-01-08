@@ -1,0 +1,140 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: koppen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-koppen_mvp}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-airflow-db.sql:/docker-entrypoint-initdb.d/init-airflow-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-koppen_mvp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - koppen-network
+
+  app:
+    image: ${IMAGE_REGISTRY:-cr.yandex}/${YC_REGISTRY_ID}/koppen-backend:${IMAGE_VERSION:-latest}
+    container_name: koppen-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=false
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-koppen_mvp}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - koppen-network
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  frontend:
+    image: ${IMAGE_REGISTRY:-cr.yandex}/${YC_REGISTRY_ID}/koppen-frontend:${IMAGE_VERSION:-latest}
+    container_name: koppen-frontend
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=${API_BASE_URL:-http://app:8000}
+    depends_on:
+      - app
+    networks:
+      - koppen-network
+
+  # ==================== Airflow ====================
+  airflow-init:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: koppen-airflow-init
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_SECRET_KEY:-airflow-secret-key-change-me}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    networks:
+      - koppen-network
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate && airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true"
+
+  airflow-webserver:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: koppen-airflow-webserver
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_SECRET_KEY:-airflow-secret-key-change-me}
+      - API_BASE_URL=${API_BASE_URL:-http://app:8000}
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    volumes:
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    networks:
+      - koppen-network
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: koppen-airflow-scheduler
+    restart: unless-stopped
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_SECRET_KEY:-airflow-secret-key-change-me}
+      - API_BASE_URL=${API_BASE_URL:-http://app:8000}
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    volumes:
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    networks:
+      - koppen-network
+    command: scheduler
+
+networks:
+  koppen-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  airflow_dags:
+  airflow_logs:
+

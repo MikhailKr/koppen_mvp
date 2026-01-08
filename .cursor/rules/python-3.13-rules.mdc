@@ -1,0 +1,205 @@
+---
+alwaysApply: true
+---
+# Python 3.13 Development Rules
+
+You are an expert Python developer writing clean, maintainable, and performant code using Python 3.13.
+
+## Code Style & Formatting
+
+- Follow PEP 8 style guidelines strictly
+- Use 4 spaces for indentation (no tabs)
+- Maximum line length of 88 characters (Black formatter standard)
+- Use trailing commas in multi-line data structures
+- Organize imports: standard library → third-party → local (use isort)
+
+## Python 3.13 Features
+
+- Use the new improved REPL features for debugging
+- Leverage improved error messages for better debugging
+- Use `type` statement for type aliases: `type Point = tuple[int, int]`
+- Use generic syntax for classes: `class Stack[T]: ...`
+- Use `**kwargs: Unpack[TypedDict]` for typed keyword arguments
+- Prefer `typing.override` decorator when overriding methods
+- Use `warnings.deprecated` decorator for deprecation warnings
+
+## Type Hints (Required)
+
+- Add type hints to ALL function signatures (parameters and return types)
+- Use modern typing syntax (Python 3.10+):
+  - `list[int]` instead of `List[int]`
+  - `dict[str, int]` instead of `Dict[str, int]`
+  - `str | None` instead of `Optional[str]`
+  - `X | Y` instead of `Union[X, Y]`
+- Use `Self` for methods returning the same class type
+- Use `TypeVar` and generics for reusable components
+- Use `TypedDict` for dictionaries with known structure
+- Use `Protocol` for structural subtyping (duck typing with types)
+- Annotate class variables with `ClassVar`
+
+## Data Structures
+
+- Use `dataclasses` with `@dataclass(slots=True, frozen=True)` when appropriate
+- Prefer `Pydantic` for data validation and settings management
+- Use `NamedTuple` for immutable record types
+- Use `Enum` and `StrEnum` for enumerated values
+- Use `collections.deque` for queue operations
+- Use `dict` (ordered by default) instead of `OrderedDict`
+
+## Functions & Methods
+
+- Write small, focused functions (single responsibility)
+- Use keyword-only arguments for clarity: `def func(*, name: str, age: int)`
+- Use positional-only parameters when appropriate: `def func(x, y, /)`
+- Prefer `functools.cache` or `functools.lru_cache` for expensive computations
+- Use `*args` and `**kwargs` sparingly and with type hints
+- Return early to reduce nesting
+- Use `contextlib.contextmanager` for resource management
+
+## String Handling
+
+- Use f-strings for string formatting (preferred)
+- Use f-string debugging: `f"{variable=}"` for debug output
+- Use raw strings for regex patterns: `r"\d+"`
+- Use `str.removeprefix()` and `str.removesuffix()` instead of slicing
+- Use triple quotes for multi-line strings and docstrings
+
+## Error Handling
+
+- Be specific with exception types (never bare `except:`)
+- Use `except Exception as e:` when catching general exceptions
+- Use exception chaining: `raise NewError() from original_error`
+- Use `ExceptionGroup` and `except*` for handling multiple exceptions
+- Create custom exceptions inheriting from appropriate base classes
+- Use `contextlib.suppress()` for expected exceptions to ignore
+
+## File & Path Operations
+
+- Use `pathlib.Path` for all file path operations
+- Use context managers (`with` statement) for file operations
+- Specify encoding explicitly: `open(file, encoding="utf-8")`
+- Use `Path.read_text()` and `Path.write_text()` for simple operations
+
+## Async Programming
+
+- Use `async`/`await` for I/O-bound operations
+- Use `asyncio.TaskGroup` for managing concurrent tasks (Python 3.11+)
+- Use `asyncio.timeout()` context manager for timeouts
+- Prefer `asyncio.run()` as the main entry point
+- Use `aiofiles` for async file operations
+- Use `httpx` or `aiohttp` for async HTTP requests
+
+## Testing
+
+- Write tests using `pytest` framework
+- Use `pytest` fixtures for setup/teardown
+- Use `pytest.mark.parametrize` for test variations
+- Aim for high test coverage on business logic
+- Use `unittest.mock` or `pytest-mock` for mocking
+- Use `hypothesis` for property-based testing when appropriate
+
+## Documentation
+
+- Write docstrings for all public modules, classes, and functions
+- Use Google-style docstrings format:
+  ```python
+  def function(arg1: str, arg2: int) -> bool:
+      """Short description.
+
+      Longer description if needed.
+
+      Args:
+          arg1: Description of arg1.
+          arg2: Description of arg2.
+
+      Returns:
+          Description of return value.
+
+      Raises:
+          ValueError: When something is wrong.
+      """
+  ```
+- Keep comments meaningful; prefer self-documenting code
+
+## Performance
+
+- Use generators and iterators for large datasets
+- Use `__slots__` in classes to reduce memory footprint
+- Profile before optimizing (`cProfile`, `line_profiler`)
+- Use list/dict/set comprehensions over loops when readable
+- Use `itertools` for efficient iteration patterns
+- Consider `functools.cache` for memoization
+
+## Project Structure
+
+- Use `pyproject.toml` for project configuration
+- Use `uv` or `poetry` for dependency management
+- Structure packages with clear `__init__.py` exports
+- Separate concerns: models, services, utils, etc.
+- Use environment variables for configuration (python-dotenv)
+
+## Security
+
+- Never hardcode secrets or credentials
+- Use `secrets` module for cryptographic randomness
+- Validate and sanitize all external input
+- Use parameterized queries for databases
+- Keep dependencies updated for security patches
+
+## Logging
+
+- Use the `logging` module, not `print()` for production code
+- Configure logging with appropriate levels (DEBUG, INFO, WARNING, ERROR)
+- Use structured logging with `structlog` for complex applications
+- Include context in log messages
+
+## Code Quality Tools
+
+- Use `ruff` for linting and formatting (fast, replaces flake8/black/isort)
+- Use `mypy` or `pyright` for static type checking with strict mode
+- Use `pre-commit` hooks for automated checks
+- Use `bandit` for security linting
+
+## Common Patterns
+
+```python
+# Pattern: Guard clauses
+def process(data: list[int] | None) -> int:
+    if data is None:
+        return 0
+    if not data:
+        return 0
+    return sum(data)
+
+# Pattern: Context manager for resources
+from contextlib import contextmanager
+
+@contextmanager
+def managed_resource():
+    resource = acquire()
+    try:
+        yield resource
+    finally:
+        release(resource)
+
+# Pattern: Factory with Protocol
+from typing import Protocol
+
+class Reader(Protocol):
+    def read(self) -> str: ...
+
+def create_reader(source: str) -> Reader:
+    ...
+```
+
+## Don'ts
+
+- Don't use mutable default arguments: `def func(items=[])`  # BAD
+- Don't use `from module import *`
+- Don't catch `BaseException` or `KeyboardInterrupt` without re-raising
+- Don't use `assert` for data validation in production
+- Don't use deprecated modules: `optparse`, `imp`, `distutils`
+- Don't use string formatting with `%` or `.format()` (use f-strings)
+- Don't ignore type checker errors with broad `# type: ignore`
+
+

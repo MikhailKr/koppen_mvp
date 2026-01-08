@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- AI Assistant Icon -->
+  <defs>
+    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Glow effect -->
+  <circle cx="50" cy="50" r="40" fill="url(#glowGrad)"/>
+  
+  <!-- Brain/AI symbol -->
+  <path d="M 30 35 Q 25 30 25 40 Q 25 50 30 55 Q 35 60 40 58 Q 45 60 50 58 Q 55 60 60 58 Q 65 60 70 55 Q 75 50 75 40 Q 75 30 70 35 Q 65 32 60 35 Q 55 32 50 35 Q 45 32 40 35 Q 35 32 30 35 Z" 
+        fill="url(#brainGrad)"/>
+  
+  <!-- Neural network nodes -->
+  <circle cx="35" cy="42" r="2.5" fill="#ffffff"/>
+  <circle cx="50" cy="40" r="2.5" fill="#ffffff"/>
+  <circle cx="65" cy="42" r="2.5" fill="#ffffff"/>
+  <circle cx="40" cy="50" r="2.5" fill="#ffffff"/>
+  <circle cx="50" cy="48" r="3" fill="#fbbf24"/>
+  <circle cx="60" cy="50" r="2.5" fill="#ffffff"/>
+  <circle cx="45" cy="56" r="2.5" fill="#ffffff"/>
+  <circle cx="55" cy="56" r="2.5" fill="#ffffff"/>
+  
+  <!-- Connection lines -->
+  <line x1="35" y1="42" x2="50" y2="48" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="50" y1="40" x2="50" y2="48" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="65" y1="42" x2="50" y2="48" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="40" y1="50" x2="50" y2="48" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="60" y1="50" x2="50" y2="48" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="50" y1="48" x2="45" y2="56" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="50" y1="48" x2="55" y2="56" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  
+  <!-- Chat bubble -->
+  <path d="M 20 65 Q 20 60 25 60 L 35 60 Q 40 60 40 65 L 40 72 Q 40 75 35 75 L 28 75 L 25 78 L 25 75 Q 20 75 20 72 Z" 
+        fill="#64748b" opacity="0.8" rx="3"/>
+  
+  <!-- Wind symbol in chat -->
+  <path d="M 25 67 Q 27 68 28 67" stroke="#60a5fa" stroke-width="1.5" fill="none"/>
+  <path d="M 28 69 Q 30 70 31 69" stroke="#60a5fa" stroke-width="1.5" fill="none"/>
+</svg>
+

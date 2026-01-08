@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Add/Plus Icon -->
+  <defs>
+    <linearGradient id="addGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Circle background -->
+  <circle cx="50" cy="50" r="45" fill="url(#addGrad)" opacity="0.2"/>
+  
+  <!-- Plus sign -->
+  <rect x="40" y="30" width="20" height="6" rx="3" fill="url(#addGrad)"/>
+  <rect x="47" y="23" width="6" height="20" rx="3" fill="url(#addGrad)"/>
+  
+  <!-- Wind farm outline in background -->
+  <g transform="translate(25, 65) scale(0.4)">
+    <rect x="0" y="0" width="3" height="20" fill="#64748b" opacity="0.3"/>
+    <ellipse cx="1.5" cy="5" rx="8" ry="1.5" fill="#64748b" opacity="0.3"/>
+    <ellipse cx="1.5" cy="5" rx="8" ry="1.5" fill="#64748b" opacity="0.3" transform="rotate(120 1.5 5)"/>
+    <ellipse cx="1.5" cy="5" rx="8" ry="1.5" fill="#64748b" opacity="0.3" transform="rotate(240 1.5 5)"/>
+  </g>
+</svg>
+

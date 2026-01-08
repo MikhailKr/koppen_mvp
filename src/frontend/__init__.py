@@ -1,0 +1,2 @@
+"""Koppen MVP Streamlit Frontend."""
+
