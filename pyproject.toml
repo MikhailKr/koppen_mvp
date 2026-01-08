@@ -68,6 +68,7 @@ ignore = [
     "B904",   # Use `raise from` to specify exception cause (acceptable for some error handling)
     "E741",   # Ambiguous variable name (false positives for single letter vars in some contexts)
     "SIM101", # Combine if statements (sometimes less readable)
+    "SIM102", # Use a single if statement instead of nested if statements
     "SIM114", # Combine if statements with same body
     "ARG001", # Unused function argument (required for FastAPI dependency injection)
 ]
