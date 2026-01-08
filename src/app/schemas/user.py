@@ -36,4 +36,3 @@ class UserRead(UserBase):
     is_superuser: bool
     created_at: datetime
     updated_at: datetime
-

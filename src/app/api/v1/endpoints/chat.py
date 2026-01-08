@@ -3,8 +3,8 @@
 import logging
 import traceback
 
-from pydantic import BaseModel
 from fastapi import APIRouter
+from pydantic import BaseModel
 
 from app.core.deps import CurrentUser, DatabaseSession
 from app.services.ai_agent_service import AIAgentService
@@ -36,7 +36,7 @@ async def chat_with_agent(
 ) -> ChatResponse:
     """
     Chat with the AI agent about wind farms and forecasts.
-    
+
     The agent can:
     - List your wind farms
     - Get detailed information about specific wind farms
@@ -45,7 +45,9 @@ async def chat_with_agent(
     - Summarize generation data
     """
     try:
-        logger.info(f"Chat request from user {current_user.id}: {request.message[:100]}")
+        logger.info(
+            f"Chat request from user {current_user.id}: {request.message[:100]}"
+        )
         agent = AIAgentService()
         response = await agent.chat(
             message=request.message,
@@ -58,6 +60,3 @@ async def chat_with_agent(
     except Exception as e:
         logger.error(f"Chat error: {str(e)}\n{traceback.format_exc()}")
         return ChatResponse(response=f"Error: {str(e)}", success=False)
-
-
-

@@ -15,4 +15,3 @@ class TokenPayload(BaseModel):
 
     sub: int  # user id
     exp: int  # expiration timestamp
-

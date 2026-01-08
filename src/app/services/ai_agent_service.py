@@ -2,6 +2,7 @@
 
 import json
 import os
+from datetime import UTC
 from typing import Any
 
 from groq import Groq
@@ -9,9 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.wind_energy_unit import WindFarm, WindTurbineFleet, WindFarmGenerationRecord
 from app.models.forecast import WindGenerationForecast
-
+from app.models.wind_energy_unit import (
+    WindFarm,
+    WindFarmGenerationRecord,
+    WindTurbineFleet,
+)
 
 # MCP-style tool definitions
 TOOLS = [
@@ -138,6 +142,7 @@ class AIAgentService:
     def __init__(self) -> None:
         """Initialize the AI agent with Groq client."""
         from app.core.config import settings
+
         api_key = settings.groq_api_key or os.getenv("GROQ_API_KEY")
         if not api_key:
             raise ValueError("GROQ_API_KEY environment variable is not set")
@@ -154,7 +159,11 @@ class AIAgentService:
         """Get all wind farms for a user."""
         stmt = (
             select(WindFarm)
-            .options(selectinload(WindFarm.wind_turbine_fleets).selectinload(WindTurbineFleet.wind_turbine))
+            .options(
+                selectinload(WindFarm.wind_turbine_fleets).selectinload(
+                    WindTurbineFleet.wind_turbine
+                )
+            )
             .where(WindFarm.user_id == user_id)
         )
         result = await session.execute(stmt)
@@ -164,17 +173,22 @@ class AIAgentService:
         for farm in farms:
             total_turbines = sum(f.number_of_turbines for f in farm.wind_turbine_fleets)
             total_capacity = sum(
-                f.number_of_turbines * (f.wind_turbine.nominal_power if f.wind_turbine else 0)
+                f.number_of_turbines
+                * (f.wind_turbine.nominal_power if f.wind_turbine else 0)
                 for f in farm.wind_turbine_fleets
             )
-            farm_list.append({
-                "id": farm.id,
-                "name": farm.name,
-                "description": farm.description,
-                "total_turbines": total_turbines,
-                "total_capacity_mw": round(total_capacity, 2),
-                "created_at": farm.created_at.isoformat() if farm.created_at else None,
-            })
+            farm_list.append(
+                {
+                    "id": farm.id,
+                    "name": farm.name,
+                    "description": farm.description,
+                    "total_turbines": total_turbines,
+                    "total_capacity_mw": round(total_capacity, 2),
+                    "created_at": farm.created_at.isoformat()
+                    if farm.created_at
+                    else None,
+                }
+            )
         return farm_list
 
     async def _get_wind_farm_details(
@@ -184,10 +198,12 @@ class AIAgentService:
         stmt = (
             select(WindFarm)
             .options(
-                selectinload(WindFarm.wind_turbine_fleets)
-                .selectinload(WindTurbineFleet.wind_turbine),
-                selectinload(WindFarm.wind_turbine_fleets)
-                .selectinload(WindTurbineFleet.location),
+                selectinload(WindFarm.wind_turbine_fleets).selectinload(
+                    WindTurbineFleet.wind_turbine
+                ),
+                selectinload(WindFarm.wind_turbine_fleets).selectinload(
+                    WindTurbineFleet.location
+                ),
             )
             .where(WindFarm.id == wind_farm_id, WindFarm.user_id == user_id)
         )
@@ -199,25 +215,38 @@ class AIAgentService:
 
         fleets = []
         for f in farm.wind_turbine_fleets:
-            fleets.append({
-                "number_of_turbines": f.number_of_turbines,
-                "turbine_type": f.wind_turbine.turbine_type if f.wind_turbine else None,
-                "nominal_power_mw": f.wind_turbine.nominal_power if f.wind_turbine else None,
-                "hub_height_m": f.wind_turbine.hub_height if f.wind_turbine else None,
-                "location": {
-                    "latitude": f.location.latitude if f.location else None,
-                    "longitude": f.location.longitude if f.location else None,
-                } if f.location else None,
-            })
+            fleets.append(
+                {
+                    "number_of_turbines": f.number_of_turbines,
+                    "turbine_type": f.wind_turbine.turbine_type
+                    if f.wind_turbine
+                    else None,
+                    "nominal_power_mw": f.wind_turbine.nominal_power
+                    if f.wind_turbine
+                    else None,
+                    "hub_height_m": f.wind_turbine.hub_height
+                    if f.wind_turbine
+                    else None,
+                    "location": {
+                        "latitude": f.location.latitude if f.location else None,
+                        "longitude": f.location.longitude if f.location else None,
+                    }
+                    if f.location
+                    else None,
+                }
+            )
 
         return {
             "id": farm.id,
             "name": farm.name,
             "description": farm.description,
             "turbine_fleets": fleets,
-            "total_turbines": sum(f.number_of_turbines for f in farm.wind_turbine_fleets),
+            "total_turbines": sum(
+                f.number_of_turbines for f in farm.wind_turbine_fleets
+            ),
             "total_capacity_mw": sum(
-                f.number_of_turbines * (f.wind_turbine.nominal_power if f.wind_turbine else 0)
+                f.number_of_turbines
+                * (f.wind_turbine.nominal_power if f.wind_turbine else 0)
                 for f in farm.wind_turbine_fleets
             ),
         }
@@ -231,7 +260,7 @@ class AIAgentService:
         start_hours_from_now: int = 0,
     ) -> dict[str, Any]:
         """Get forecasts for a wind farm within a time horizon.
-        
+
         Args:
             session: Database session
             user_id: Current user ID
@@ -239,17 +268,19 @@ class AIAgentService:
             horizon_hours: Number of hours to forecast (default 48)
             start_hours_from_now: Start offset from now in hours (0 = now, 24 = tomorrow)
         """
-        from datetime import datetime, timedelta, timezone
-        
+        from datetime import datetime, timedelta
+
         # Verify ownership and get farm name
-        farm_stmt = select(WindFarm).where(WindFarm.id == wind_farm_id, WindFarm.user_id == user_id)
+        farm_stmt = select(WindFarm).where(
+            WindFarm.id == wind_farm_id, WindFarm.user_id == user_id
+        )
         farm_result = await session.execute(farm_stmt)
         farm = farm_result.scalars().first()
         if not farm:
             return {"error": "Wind farm not found or access denied"}
 
         # Calculate time range
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         start_time = now + timedelta(hours=start_hours_from_now)
         end_time = start_time + timedelta(hours=min(horizon_hours, 168))  # Max 7 days
 
@@ -276,13 +307,15 @@ class AIAgentService:
         # Calculate summary statistics
         generations = [f.generation for f in forecasts if f.generation is not None]
         wind_speeds = [f.wind_speed for f in forecasts if f.wind_speed is not None]
-        
+
         hourly_forecasts = [
             {
                 "time": f.forecast_time.strftime("%Y-%m-%d %H:%M"),
                 "generation_kw": round(f.generation, 2) if f.generation else 0,
                 "wind_speed_ms": round(f.wind_speed, 2) if f.wind_speed else None,
-                "wind_direction_deg": round(f.wind_direction, 1) if f.wind_direction else None,
+                "wind_direction_deg": round(f.wind_direction, 1)
+                if f.wind_direction
+                else None,
                 "temperature_c": round(f.temperature, 1) if f.temperature else None,
             }
             for f in forecasts
@@ -298,11 +331,17 @@ class AIAgentService:
             },
             "summary": {
                 "total_forecasts": len(forecasts),
-                "avg_generation_kw": round(sum(generations) / len(generations), 2) if generations else 0,
+                "avg_generation_kw": round(sum(generations) / len(generations), 2)
+                if generations
+                else 0,
                 "max_generation_kw": round(max(generations), 2) if generations else 0,
                 "min_generation_kw": round(min(generations), 2) if generations else 0,
-                "total_generation_mwh": round(sum(generations) / 1000, 2) if generations else 0,
-                "avg_wind_speed_ms": round(sum(wind_speeds) / len(wind_speeds), 2) if wind_speeds else 0,
+                "total_generation_mwh": round(sum(generations) / 1000, 2)
+                if generations
+                else 0,
+                "avg_wind_speed_ms": round(sum(wind_speeds) / len(wind_speeds), 2)
+                if wind_speeds
+                else 0,
             },
             "hourly_forecasts": hourly_forecasts,
         }
@@ -312,24 +351,24 @@ class AIAgentService:
     ) -> dict[str, Any]:
         """Calculate forecast errors by comparing with actual generation."""
         # Verify ownership
-        farm_stmt = select(WindFarm).where(WindFarm.id == wind_farm_id, WindFarm.user_id == user_id)
+        farm_stmt = select(WindFarm).where(
+            WindFarm.id == wind_farm_id, WindFarm.user_id == user_id
+        )
         farm_result = await session.execute(farm_stmt)
         farm = farm_result.scalars().first()
         if not farm:
             return {"error": "Wind farm not found or access denied"}
 
         # Get forecasts
-        forecast_stmt = (
-            select(WindGenerationForecast)
-            .where(WindGenerationForecast.wind_farm_id == wind_farm_id)
+        forecast_stmt = select(WindGenerationForecast).where(
+            WindGenerationForecast.wind_farm_id == wind_farm_id
         )
         forecast_result = await session.execute(forecast_stmt)
         forecasts = forecast_result.scalars().all()
 
         # Get actual generation
-        gen_stmt = (
-            select(WindFarmGenerationRecord)
-            .where(WindFarmGenerationRecord.wind_farm_id == wind_farm_id)
+        gen_stmt = select(WindFarmGenerationRecord).where(
+            WindFarmGenerationRecord.wind_farm_id == wind_farm_id
         )
         gen_result = await session.execute(gen_stmt)
         actuals = gen_result.scalars().all()
@@ -346,11 +385,13 @@ class AIAgentService:
         # Match forecasts with actuals by hour
         forecast_by_hour = {
             f.forecast_time.replace(minute=0, second=0, microsecond=0): f.generation
-            for f in forecasts if f.generation is not None
+            for f in forecasts
+            if f.generation is not None
         }
         actual_by_hour = {
             a.timestamp.replace(minute=0, second=0, microsecond=0): a.generation
-            for a in actuals if a.generation is not None
+            for a in actuals
+            if a.generation is not None
         }
 
         # Find matching hours
@@ -369,13 +410,17 @@ class AIAgentService:
         for hour in matched_hours:
             forecast_val = forecast_by_hour[hour]
             actual_val = actual_by_hour[hour]
-            errors.append({
-                "forecast": forecast_val,
-                "actual": actual_val,
-                "error": forecast_val - actual_val,
-                "abs_error": abs(forecast_val - actual_val),
-                "pct_error": abs(forecast_val - actual_val) / actual_val * 100 if actual_val > 0 else None,
-            })
+            errors.append(
+                {
+                    "forecast": forecast_val,
+                    "actual": actual_val,
+                    "error": forecast_val - actual_val,
+                    "abs_error": abs(forecast_val - actual_val),
+                    "pct_error": abs(forecast_val - actual_val) / actual_val * 100
+                    if actual_val > 0
+                    else None,
+                }
+            )
 
         # Calculate metrics
         n = len(errors)
@@ -398,13 +443,17 @@ class AIAgentService:
                 "rmse_kw": round(rmse, 2),
                 "mape_percent": round(mape, 2) if mape else None,
                 "bias_kw": round(bias, 2),
-                "bias_direction": "over-forecasting" if bias > 0 else "under-forecasting",
+                "bias_direction": "over-forecasting"
+                if bias > 0
+                else "under-forecasting",
             },
             "summary": {
                 "avg_actual_kw": round(avg_actual, 2),
                 "avg_forecast_kw": round(avg_forecast, 2),
                 "total_actual_mwh": round(sum(e["actual"] for e in errors) / 1000, 2),
-                "total_forecast_mwh": round(sum(e["forecast"] for e in errors) / 1000, 2),
+                "total_forecast_mwh": round(
+                    sum(e["forecast"] for e in errors) / 1000, 2
+                ),
             },
         }
 
@@ -413,7 +462,9 @@ class AIAgentService:
     ) -> dict[str, Any]:
         """Get generation data summary for a wind farm."""
         # Verify ownership
-        farm_stmt = select(WindFarm).where(WindFarm.id == wind_farm_id, WindFarm.user_id == user_id)
+        farm_stmt = select(WindFarm).where(
+            WindFarm.id == wind_farm_id, WindFarm.user_id == user_id
+        )
         farm_result = await session.execute(farm_stmt)
         farm = farm_result.scalars().first()
         if not farm:
@@ -446,7 +497,9 @@ class AIAgentService:
             },
             "generation_stats": {
                 "total_mwh": round(sum(generations) / 1000, 2),
-                "avg_kw": round(sum(generations) / len(generations), 2) if generations else 0,
+                "avg_kw": round(sum(generations) / len(generations), 2)
+                if generations
+                else 0,
                 "max_kw": round(max(generations), 2) if generations else 0,
                 "min_kw": round(min(generations), 2) if generations else 0,
             },
@@ -465,9 +518,11 @@ class AIAgentService:
         """Regenerate forecast for a wind farm with specific granularity."""
         from app.models import GranularityEnum
         from app.services.forecast_service import ForecastService
-        
+
         # Verify ownership
-        farm_stmt = select(WindFarm).where(WindFarm.id == wind_farm_id, WindFarm.user_id == user_id)
+        farm_stmt = select(WindFarm).where(
+            WindFarm.id == wind_farm_id, WindFarm.user_id == user_id
+        )
         farm_result = await session.execute(farm_stmt)
         farm = farm_result.scalars().first()
         if not farm:
@@ -502,13 +557,19 @@ class AIAgentService:
                     "end": result.forecast_end.isoformat(),
                 },
                 "granularity": granularity,
-                "total_forecasted_mwh": round(result.total_forecasted_generation_kwh / 1000, 2),
+                "total_forecasted_mwh": round(
+                    result.total_forecasted_generation_kwh / 1000, 2
+                ),
             }
         except Exception as e:
             return {"error": f"Failed to regenerate forecast: {str(e)}"}
 
     async def _execute_tool(
-        self, tool_name: str, arguments: dict[str, Any], session: AsyncSession, user_id: int
+        self,
+        tool_name: str,
+        arguments: dict[str, Any],
+        session: AsyncSession,
+        user_id: int,
     ) -> str:
         """Execute a tool and return the result as a string."""
         try:
@@ -558,12 +619,13 @@ class AIAgentService:
     ) -> str:
         """Process a chat message and return the response."""
         import logging
-        logger = logging.getLogger(__name__)
-        
+
+        logging.getLogger(__name__)
+
         messages: list[dict[str, Any]] = [
             {
                 "role": "system",
-                "content": """You are an AI assistant for Koppen, a wind power forecasting platform. 
+                "content": """You are an AI assistant for Koppen, a wind power forecasting platform.
 You help users understand their wind farm performance, forecast accuracy, and generation data.
 
 You have access to tools that can:
@@ -601,17 +663,20 @@ Only access data for wind farms belonging to the current user.""",
 
         try:
             # First API call with tools
-            print(f"[CHAT] Calling Groq API for user message: {message[:50]}...", flush=True)
+            print(
+                f"[CHAT] Calling Groq API for user message: {message[:50]}...",
+                flush=True,
+            )
             print(f"[CHAT] Using model: {self.model}", flush=True)
-            
+
             # Multi-turn tool calling loop
             max_iterations = 5  # Prevent infinite loops
             iteration = 0
-            
+
             while iteration < max_iterations:
                 iteration += 1
                 print(f"[CHAT] Iteration {iteration}", flush=True)
-                
+
                 try:
                     response = self.client.chat.completions.create(
                         model=self.model,
@@ -622,19 +687,27 @@ Only access data for wind farms belonging to the current user.""",
                     )
                 except Exception as api_error:
                     error_str = str(api_error)
-                    print(f"[CHAT] API error in iteration {iteration}: {error_str[:100]}", flush=True)
-                    
+                    print(
+                        f"[CHAT] API error in iteration {iteration}: {error_str[:100]}",
+                        flush=True,
+                    )
+
                     # Check if it's a rate limit error on primary model - switch to backup
-                    if ("rate_limit" in error_str.lower() or "429" in error_str) and self.model == self.primary_model:
-                        print(f"[CHAT] Rate limit hit on {self.model}, switching to backup model {self.backup_model}", flush=True)
+                    if (
+                        "rate_limit" in error_str.lower() or "429" in error_str
+                    ) and self.model == self.primary_model:
+                        print(
+                            f"[CHAT] Rate limit hit on {self.model}, switching to backup model {self.backup_model}",
+                            flush=True,
+                        )
                         self.model = self.backup_model
                         # Retry with backup model
                         continue
-                    
+
                     # If rate limit on backup too, return error
-                    if ("rate_limit" in error_str.lower() or "429" in error_str):
+                    if "rate_limit" in error_str.lower() or "429" in error_str:
                         raise api_error
-                    
+
                     # For other errors, try without tool_choice
                     try:
                         response = self.client.chat.completions.create(
@@ -642,12 +715,18 @@ Only access data for wind farms belonging to the current user.""",
                             messages=messages,
                             max_tokens=4096,
                         )
-                        return response.choices[0].message.content or "I couldn't generate a response."
+                        return (
+                            response.choices[0].message.content
+                            or "I couldn't generate a response."
+                        )
                     except Exception:
                         raise api_error
 
                 response_message = response.choices[0].message
-                print(f"[CHAT] Got response, tool_calls: {bool(response_message.tool_calls)}", flush=True)
+                print(
+                    f"[CHAT] Got response, tool_calls: {bool(response_message.tool_calls)}",
+                    flush=True,
+                )
 
                 # Check if model wants to use tools
                 if not response_message.tool_calls:
@@ -676,10 +755,17 @@ Only access data for wind farms belonging to the current user.""",
                     function_name = tool_call.function.name
                     # Handle empty or malformed arguments
                     try:
-                        function_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+                        function_args = (
+                            json.loads(tool_call.function.arguments)
+                            if tool_call.function.arguments
+                            else {}
+                        )
                     except json.JSONDecodeError:
                         function_args = {}
-                    print(f"[CHAT] Executing tool: {function_name} with args: {function_args}", flush=True)
+                    print(
+                        f"[CHAT] Executing tool: {function_name} with args: {function_args}",
+                        flush=True,
+                    )
 
                     # Execute the tool
                     tool_result = await self._execute_tool(
@@ -687,12 +773,14 @@ Only access data for wind farms belonging to the current user.""",
                     )
                     print(f"[CHAT] Tool result length: {len(tool_result)}", flush=True)
 
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": tool_result,
-                    })
-            
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "content": tool_result,
+                        }
+                    )
+
             # If we hit max iterations, get a final response without tools
             print("[CHAT] Max iterations reached, getting final response", flush=True)
             final_response = self.client.chat.completions.create(
@@ -700,11 +788,11 @@ Only access data for wind farms belonging to the current user.""",
                 messages=messages,
                 max_tokens=4096,
             )
-            return final_response.choices[0].message.content or "I couldn't generate a response."
-            
+            return (
+                final_response.choices[0].message.content
+                or "I couldn't generate a response."
+            )
+
         except Exception as e:
             print(f"[CHAT] Error: {str(e)}", flush=True)
             raise
-
-
-

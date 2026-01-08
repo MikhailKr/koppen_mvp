@@ -4,7 +4,17 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -29,8 +39,8 @@ class TurbineStatusEnum(str, enum.Enum):
     on = "on"
     off = "off"
 
+
 if TYPE_CHECKING:
-    from app.models.forecast import Forecast, ForecastHistory
     from app.models.user import User
 
 
@@ -60,12 +70,17 @@ class WindFarm(Base):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     # Relationships
@@ -74,10 +89,14 @@ class WindFarm(Base):
         "WindTurbineFleet", back_populates="wind_farm", cascade="all, delete-orphan"
     )
     generation_records: Mapped[list["WindFarmGenerationRecord"]] = relationship(
-        "WindFarmGenerationRecord", back_populates="wind_farm", cascade="all, delete-orphan"
+        "WindFarmGenerationRecord",
+        back_populates="wind_farm",
+        cascade="all, delete-orphan",
     )
     generation_forecasts: Mapped[list["WindGenerationForecast"]] = relationship(
-        "WindGenerationForecast", back_populates="wind_farm", cascade="all, delete-orphan"
+        "WindGenerationForecast",
+        back_populates="wind_farm",
+        cascade="all, delete-orphan",
     )
     forecast_runs: Mapped[list["ForecastRun"]] = relationship(
         "ForecastRun", back_populates="wind_farm", cascade="all, delete-orphan"
@@ -91,7 +110,9 @@ class PowerCurve(Base):
     """Power curve mapping wind speed to power output."""
 
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    wind_speed_value_map: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    wind_speed_value_map: Mapped[dict] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
 
     # Relationships
     wind_turbines: Mapped[list["WindTurbine"]] = relationship(
@@ -116,7 +137,10 @@ class WindTurbine(Base):
         Float, nullable=False, default=100.0, doc="Height of the wind turbine in meters"
     )
     nominal_power: Mapped[float] = mapped_column(
-        Float, nullable=False, default=1.0, doc="Nominal power of the wind turbine in MW"
+        Float,
+        nullable=False,
+        default=1.0,
+        doc="Nominal power of the wind turbine in MW",
     )
     power_curve_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("powercurve.id"), nullable=True
@@ -152,11 +176,15 @@ class WindTurbineFleet(Base):
     number_of_turbines: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     # Relationships
-    wind_farm: Mapped["WindFarm"] = relationship("WindFarm", back_populates="wind_turbine_fleets")
+    wind_farm: Mapped["WindFarm"] = relationship(
+        "WindFarm", back_populates="wind_turbine_fleets"
+    )
     wind_turbine: Mapped["WindTurbine"] = relationship(
         "WindTurbine", back_populates="wind_turbine_fleets"
     )
-    location: Mapped["Location"] = relationship("Location", back_populates="wind_turbine_fleets")
+    location: Mapped["Location"] = relationship(
+        "Location", back_populates="wind_turbine_fleets"
+    )
 
     def __str__(self) -> str:
         return f"WindTurbineFleet(id={self.id}, count={self.number_of_turbines})"
@@ -169,7 +197,9 @@ class WindRecord(Base):
         Integer, ForeignKey("location.id"), nullable=False
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    wind_speed: Mapped[float] = mapped_column(Float, nullable=False, doc="Wind speed in m/s")
+    wind_speed: Mapped[float] = mapped_column(
+        Float, nullable=False, doc="Wind speed in m/s"
+    )
     wind_direction: Mapped[float] = mapped_column(
         Float, nullable=False, doc="Wind direction in degrees"
     )
@@ -178,7 +208,9 @@ class WindRecord(Base):
     )
 
     # Relationships
-    location: Mapped["Location"] = relationship("Location", back_populates="wind_records")
+    location: Mapped["Location"] = relationship(
+        "Location", back_populates="wind_records"
+    )
 
     def __str__(self) -> str:
         return f"WindRecord(id={self.id}, speed={self.wind_speed}m/s, dir={self.wind_direction}°)"
@@ -195,7 +227,9 @@ class WindTurbineGenerationRecord(Base):
         Integer, ForeignKey("windturbine.id"), nullable=True
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    generation: Mapped[float] = mapped_column(Float, nullable=False, doc="Power generation in kW")
+    generation: Mapped[float] = mapped_column(
+        Float, nullable=False, doc="Power generation in kW"
+    )
     granularity: Mapped[GranularityEnum] = mapped_column(
         Enum(GranularityEnum), nullable=False, default=GranularityEnum.min_60
     )
@@ -230,8 +264,10 @@ class WindFarmGenerationRecord(Base):
     )
     # Turbine fleet statuses: {fleet_id: "on" | "off"}
     fleet_statuses: Mapped[dict] = mapped_column(
-        JSON, nullable=False, default=dict,
-        doc="Status of each turbine fleet: {fleet_id: 'on'|'off'}"
+        JSON,
+        nullable=False,
+        default=dict,
+        doc="Status of each turbine fleet: {fleet_id: 'on'|'off'}",
     )
     is_synthetic: Mapped[bool] = mapped_column(
         nullable=False, default=False, doc="True if data is synthetically generated"

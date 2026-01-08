@@ -1,19 +1,20 @@
 """Database configuration and session management."""
 
 from collections.abc import AsyncGenerator
-from sqlalchemy import Column, Integer, create_engine
 
+from sqlalchemy import Column, Integer
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import (
+    declarative_base,
+    declared_attr,
+)
 
 from app.core.config import settings
 
-
-from sqlalchemy.orm import declarative_base, declared_attr, sessionmaker
 
 class PreBase:
     @declared_attr
@@ -24,7 +25,6 @@ class PreBase:
 
 
 Base = declarative_base(cls=PreBase)
-
 
 
 engine = create_async_engine(
@@ -40,7 +40,7 @@ async_session_maker = async_sessionmaker(
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """Dependency that provides a database session.
 
     Yields:
@@ -53,4 +53,3 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
-

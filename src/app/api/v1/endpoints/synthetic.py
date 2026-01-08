@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field
 
 from app.core.deps import CurrentUser, DatabaseSession
 from app.models import GranularityEnum
-from app.services.synthetic_generation import SyntheticGenerationConfig, SyntheticGenerationService
+from app.services.synthetic_generation import (
+    SyntheticGenerationConfig,
+    SyntheticGenerationService,
+)
 
 router = APIRouter(prefix="/synthetic", tags=["synthetic"])
 
@@ -16,24 +19,36 @@ class SyntheticGenerationRequest(BaseModel):
     """Request schema for synthetic data generation."""
 
     wind_farm_id: int = Field(..., description="ID of the wind farm")
-    days_back: int = Field(default=30, ge=1, le=365, description="Days of historical data")
+    days_back: int = Field(
+        default=30, ge=1, le=365, description="Days of historical data"
+    )
     granularity: GranularityEnum = Field(
         default=GranularityEnum.min_60,
         description="Time granularity for records",
     )
     # Randomness settings
-    add_noise: bool = Field(default=False, description="Add Gaussian noise to power output")
+    add_noise: bool = Field(
+        default=False, description="Add Gaussian noise to power output"
+    )
     noise_std_percent: float = Field(
-        default=5.0, ge=0, le=50,
+        default=5.0,
+        ge=0,
+        le=50,
         description="Standard deviation of noise as % of power output",
     )
-    random_outages: bool = Field(default=False, description="Simulate random turbine outages")
+    random_outages: bool = Field(
+        default=False, description="Simulate random turbine outages"
+    )
     outage_probability: float = Field(
-        default=0.01, ge=0, le=1,
+        default=0.01,
+        ge=0,
+        le=1,
         description="Probability of outage per hour (0-1)",
     )
     outage_duration_hours: int = Field(
-        default=4, ge=1, le=168,
+        default=4,
+        ge=1,
+        le=168,
         description="Average outage duration in hours",
     )
 
@@ -110,4 +125,3 @@ async def generate_synthetic_data(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate synthetic data: {str(e)}",
         ) from e
-

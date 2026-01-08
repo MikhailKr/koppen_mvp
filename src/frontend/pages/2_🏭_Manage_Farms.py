@@ -1,8 +1,8 @@
 """Manage Wind Farms - View and manage existing farms."""
 
-import streamlit as st
 import pandas as pd
 import pydeck as pdk
+import streamlit as st
 
 from frontend.api_client import get_api_client
 from frontend.auth import init_session_state
@@ -39,22 +39,25 @@ st.divider()
 
 # Display farms
 for farm in farms:
-    fleets = api.get_fleets(wind_farm_id=farm['id'])
-    total_turbines = sum(f['number_of_turbines'] for f in fleets)
+    fleets = api.get_fleets(wind_farm_id=farm["id"])
+    total_turbines = sum(f["number_of_turbines"] for f in fleets)
     total_capacity = sum(
-        f['number_of_turbines'] * (f.get('wind_turbine', {}).get('nominal_power', 0) or 0)
+        f["number_of_turbines"]
+        * (f.get("wind_turbine", {}).get("nominal_power", 0) or 0)
         for f in fleets
     )
-    
+
     with st.container(border=True):
         # Header row
         col_info, col_stats, col_actions = st.columns([2, 2, 1])
-        
+
         with col_info:
             st.markdown(f"### 🏭 {farm['name']}")
             st.markdown(f"*{farm.get('description') or 'No description'}*")
-            st.caption(f"ID: {farm['id']} | Created: {farm.get('created_at', 'N/A')[:10]}")
-        
+            st.caption(
+                f"ID: {farm['id']} | Created: {farm.get('created_at', 'N/A')[:10]}"
+            )
+
         with col_stats:
             stat_col1, stat_col2, stat_col3 = st.columns(3)
             with stat_col1:
@@ -62,62 +65,82 @@ for farm in farms:
             with stat_col2:
                 st.metric("Capacity", f"{total_capacity:.1f} MW")
             with stat_col3:
-                locations = len(set(f.get('location', {}).get('id') for f in fleets if f.get('location')))
+                locations = len(
+                    {
+                        f.get("location", {}).get("id")
+                        for f in fleets
+                        if f.get("location")
+                    }
+                )
                 st.metric("Locations", locations)
-        
+
         with col_actions:
-            if st.button("🗑️ Delete", key=f"del_farm_{farm['id']}", use_container_width=True):
+            if st.button(
+                "🗑️ Delete", key=f"del_farm_{farm['id']}", use_container_width=True
+            ):
                 with st.spinner("Deleting..."):
                     # First delete all fleets associated with this farm
                     for fleet in fleets:
-                        api.delete_fleet(fleet['id'])
+                        api.delete_fleet(fleet["id"])
                     # Then delete the farm
-                    result = api.delete_wind_farm(farm['id'])
+                    result = api.delete_wind_farm(farm["id"])
                     if result.get("success"):
                         st.success("Deleted!")
                         st.rerun()
                     else:
                         error_msg = result.get("error", "Unknown error")
                         st.error(f"Failed to delete: {error_msg}")
-        
+
         # Expandable details
         with st.expander("📋 View Details", expanded=False):
             if fleets:
                 st.markdown("**Turbine Fleets:**")
                 for fleet in fleets:
-                    turb = fleet.get('wind_turbine') or {}
-                    loc = fleet.get('location') or {}
-                    
+                    turb = fleet.get("wind_turbine") or {}
+                    loc = fleet.get("location") or {}
+
                     fleet_col1, fleet_col2, fleet_col3 = st.columns([2, 2, 1])
                     with fleet_col1:
-                        st.markdown(f"⚡ **{fleet['number_of_turbines']}x** {turb.get('turbine_type', 'Unknown')}")
-                        st.caption(f"Power: {turb.get('nominal_power', 0)} MW | Hub: {turb.get('hub_height', 0)} m")
+                        st.markdown(
+                            f"⚡ **{fleet['number_of_turbines']}x** {turb.get('turbine_type', 'Unknown')}"
+                        )
+                        st.caption(
+                            f"Power: {turb.get('nominal_power', 0)} MW | Hub: {turb.get('hub_height', 0)} m"
+                        )
                     with fleet_col2:
-                        st.markdown(f"📍 ({loc.get('latitude', 0):.4f}, {loc.get('longitude', 0):.4f})")
+                        st.markdown(
+                            f"📍 ({loc.get('latitude', 0):.4f}, {loc.get('longitude', 0):.4f})"
+                        )
                     with fleet_col3:
-                        if st.button("❌", key=f"del_fleet_{fleet['id']}"):
-                            if api.delete_fleet(fleet['id']):
-                                st.rerun()
-                
+                        if st.button(
+                            "❌", key=f"del_fleet_{fleet['id']}"
+                        ) and api.delete_fleet(fleet["id"]):
+                            st.rerun()
+
                 st.divider()
-                
+
                 # Map of fleet locations with custom markers
-                if any(f.get('location') for f in fleets):
+                if any(f.get("location") for f in fleets):
                     st.markdown("**📍 Farm Locations:**")
-                    map_data = pd.DataFrame([
-                        {
-                            "lat": f['location']['latitude'], 
-                            "lon": f['location']['longitude'],
-                            "turbines": f['number_of_turbines'],
-                            "name": f.get('wind_turbine', {}).get('turbine_type', 'Turbine')
-                        }
-                        for f in fleets if f.get('location')
-                    ])
-                    
+                    map_data = pd.DataFrame(
+                        [
+                            {
+                                "lat": f["location"]["latitude"],
+                                "lon": f["location"]["longitude"],
+                                "turbines": f["number_of_turbines"],
+                                "name": f.get("wind_turbine", {}).get(
+                                    "turbine_type", "Turbine"
+                                ),
+                            }
+                            for f in fleets
+                            if f.get("location")
+                        ]
+                    )
+
                     # Calculate center
-                    center_lat = map_data['lat'].mean()
-                    center_lon = map_data['lon'].mean()
-                    
+                    center_lat = map_data["lat"].mean()
+                    center_lon = map_data["lon"].mean()
+
                     # Create pydeck layer with larger icons
                     layer = pdk.Layer(
                         "ScatterplotLayer",
@@ -128,7 +151,7 @@ for farm in farms:
                         pickable=True,
                         auto_highlight=True,
                     )
-                    
+
                     # Icon layer for wind turbine symbol
                     icon_layer = pdk.Layer(
                         "TextLayer",
@@ -141,20 +164,22 @@ for farm in farms:
                         get_text_anchor="'middle'",
                         get_alignment_baseline="'center'",
                     )
-                    
+
                     view_state = pdk.ViewState(
                         latitude=center_lat,
                         longitude=center_lon,
                         zoom=5,
                         pitch=0,
                     )
-                    
-                    st.pydeck_chart(pdk.Deck(
-                        layers=[layer, icon_layer],
-                        initial_view_state=view_state,
-                        tooltip={"text": "{name}\n{turbines} turbines"},
-                        map_style="mapbox://styles/mapbox/dark-v10",
-                    ))
+
+                    st.pydeck_chart(
+                        pdk.Deck(
+                            layers=[layer, icon_layer],
+                            initial_view_state=view_state,
+                            tooltip={"text": "{name}\n{turbines} turbines"},
+                            map_style="mapbox://styles/mapbox/dark-v10",
+                        )
+                    )
             else:
                 st.info("No turbines assigned to this farm yet.")
                 if st.button("➕ Add Turbines", key=f"add_turb_{farm['id']}"):
@@ -169,13 +194,14 @@ st.markdown("### 📊 Portfolio Summary")
 
 total_farms = len(farms)
 total_all_turbines = sum(
-    sum(f['number_of_turbines'] for f in api.get_fleets(wind_farm_id=farm['id']))
+    sum(f["number_of_turbines"] for f in api.get_fleets(wind_farm_id=farm["id"]))
     for farm in farms
 )
 total_all_capacity = sum(
     sum(
-        f['number_of_turbines'] * (f.get('wind_turbine', {}).get('nominal_power', 0) or 0)
-        for f in api.get_fleets(wind_farm_id=farm['id'])
+        f["number_of_turbines"]
+        * (f.get("wind_turbine", {}).get("nominal_power", 0) or 0)
+        for f in api.get_fleets(wind_farm_id=farm["id"])
     )
     for farm in farms
 )

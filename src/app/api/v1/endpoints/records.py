@@ -77,7 +77,9 @@ async def create_wind_records_bulk(
     return records
 
 
-@router.get("/wind-records/", response_model=list[WindRecordRead], tags=["wind-records"])
+@router.get(
+    "/wind-records/", response_model=list[WindRecordRead], tags=["wind-records"]
+)
 async def list_wind_records(
     db: DatabaseSession,
     current_user: CurrentUser,
@@ -102,7 +104,11 @@ async def list_wind_records(
     return list(result.scalars().all())
 
 
-@router.delete("/wind-records/{record_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["wind-records"])
+@router.delete(
+    "/wind-records/{record_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["wind-records"],
+)
 async def delete_wind_record(
     record_id: int,
     db: DatabaseSession,
@@ -175,7 +181,11 @@ async def create_generation_records_bulk(
     return records
 
 
-@router.get("/generation-records/", response_model=list[GenerationRecordRead], tags=["generation-records"])
+@router.get(
+    "/generation-records/",
+    response_model=list[GenerationRecordRead],
+    tags=["generation-records"],
+)
 async def list_generation_records(
     db: DatabaseSession,
     current_user: CurrentUser,
@@ -189,13 +199,19 @@ async def list_generation_records(
     query = select(WindTurbineGenerationRecord)
 
     if wind_turbine_id:
-        query = query.where(WindTurbineGenerationRecord.wind_turbine_id == wind_turbine_id)
+        query = query.where(
+            WindTurbineGenerationRecord.wind_turbine_id == wind_turbine_id
+        )
     if start_time:
         query = query.where(WindTurbineGenerationRecord.timestamp >= start_time)
     if end_time:
         query = query.where(WindTurbineGenerationRecord.timestamp <= end_time)
 
-    query = query.order_by(WindTurbineGenerationRecord.timestamp.desc()).offset(skip).limit(limit)
+    query = (
+        query.order_by(WindTurbineGenerationRecord.timestamp.desc())
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -212,7 +228,9 @@ async def delete_generation_record(
 ) -> None:
     """Delete a generation record."""
     result = await db.execute(
-        select(WindTurbineGenerationRecord).where(WindTurbineGenerationRecord.id == record_id)
+        select(WindTurbineGenerationRecord).where(
+            WindTurbineGenerationRecord.id == record_id
+        )
     )
     record = result.scalar_one_or_none()
     if not record:
@@ -305,7 +323,11 @@ async def list_farm_generation_records(
     if end_time:
         query = query.where(WindFarmGenerationRecord.timestamp <= end_time)
 
-    query = query.order_by(WindFarmGenerationRecord.timestamp.desc()).offset(skip).limit(limit)
+    query = (
+        query.order_by(WindFarmGenerationRecord.timestamp.desc())
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -348,4 +370,3 @@ async def delete_farm_generation_record(
     if not record:
         raise HTTPException(status_code=404, detail="Farm generation record not found")
     await db.delete(record)
-

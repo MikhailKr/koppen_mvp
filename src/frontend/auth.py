@@ -74,4 +74,3 @@ def require_auth() -> bool:
         st.switch_page("pages/9_🔐_Login.py")
         return False
     return True
-

@@ -27,4 +27,3 @@ api_router.include_router(weather.router)
 api_router.include_router(synthetic.router)
 api_router.include_router(forecasts.router)
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
-

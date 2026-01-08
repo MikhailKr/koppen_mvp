@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DatabaseSession
 from app.models import WindFarm
@@ -110,4 +109,3 @@ async def delete_wind_farm(
         raise HTTPException(status_code=404, detail="Wind farm not found")
 
     await db.delete(wind_farm)
-

@@ -60,4 +60,3 @@ def create_access_token(subject: int, expires_delta: timedelta | None = None) ->
         settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
     )
-

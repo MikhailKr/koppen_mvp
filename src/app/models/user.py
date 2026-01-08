@@ -44,4 +44,3 @@ class User(Base):
     wind_farms: Mapped[list["WindFarm"]] = relationship(
         "WindFarm", back_populates="user"
     )
-

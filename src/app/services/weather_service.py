@@ -227,7 +227,9 @@ class WeatherService:
             params["models"] = "icon_d2"
             params["forecast_minutely_15"] = 96  # 24 hours of 15-min data
             resolution_info = "15-min native data (ICON-D2)"
-            logger.info("Using native 15-minute forecast data from Open-Meteo (ICON-D2)")
+            logger.info(
+                "Using native 15-minute forecast data from Open-Meteo (ICON-D2)"
+            )
         elif resolution_minutes == 30:
             params["hourly"] = ",".join(self.FORECAST_VARS)
             params["models"] = model
@@ -300,9 +302,15 @@ class WeatherService:
                     wind_speed=self._get_value(hourly_data, "wind_speed_10m", i),
                     wind_speed_80m=self._get_value(hourly_data, "wind_speed_80m", i),
                     wind_speed_100m=self._get_value(hourly_data, "wind_speed_100m", i),
-                    wind_direction=self._get_value(hourly_data, "wind_direction_10m", i),
-                    wind_direction_80m=self._get_value(hourly_data, "wind_direction_80m", i),
-                    wind_direction_100m=self._get_value(hourly_data, "wind_direction_100m", i),
+                    wind_direction=self._get_value(
+                        hourly_data, "wind_direction_10m", i
+                    ),
+                    wind_direction_80m=self._get_value(
+                        hourly_data, "wind_direction_80m", i
+                    ),
+                    wind_direction_100m=self._get_value(
+                        hourly_data, "wind_direction_100m", i
+                    ),
                     pressure=self._get_value(hourly_data, "pressure_msl", i),
                     precipitation=self._get_value(hourly_data, "precipitation", i),
                     cloud_cover=self._get_value(hourly_data, "cloud_cover", i),
@@ -319,7 +327,9 @@ class WeatherService:
             return values[index]
         return None
 
-    def _interpolate_to_30min(self, records: list[WeatherRecord]) -> list[WeatherRecord]:
+    def _interpolate_to_30min(
+        self, records: list[WeatherRecord]
+    ) -> list[WeatherRecord]:
         """Interpolate hourly data to 30-minute intervals.
 
         Args:
@@ -345,17 +355,39 @@ class WeatherService:
             interpolated.append(
                 WeatherRecord(
                     time=mid_time,
-                    temperature=self._interpolate_value(current.temperature, next_rec.temperature),
-                    temperature_80m=self._interpolate_value(current.temperature_80m, next_rec.temperature_80m),
-                    wind_speed=self._interpolate_value(current.wind_speed, next_rec.wind_speed),
-                    wind_speed_80m=self._interpolate_value(current.wind_speed_80m, next_rec.wind_speed_80m),
-                    wind_speed_100m=self._interpolate_value(current.wind_speed_100m, next_rec.wind_speed_100m),
-                    wind_direction=self._interpolate_value(current.wind_direction, next_rec.wind_direction),
-                    wind_direction_80m=self._interpolate_value(current.wind_direction_80m, next_rec.wind_direction_80m),
-                    wind_direction_100m=self._interpolate_value(current.wind_direction_100m, next_rec.wind_direction_100m),
-                    pressure=self._interpolate_value(current.pressure, next_rec.pressure),
-                    precipitation=self._interpolate_value(current.precipitation, next_rec.precipitation),
-                    cloud_cover=self._interpolate_value(current.cloud_cover, next_rec.cloud_cover),
+                    temperature=self._interpolate_value(
+                        current.temperature, next_rec.temperature
+                    ),
+                    temperature_80m=self._interpolate_value(
+                        current.temperature_80m, next_rec.temperature_80m
+                    ),
+                    wind_speed=self._interpolate_value(
+                        current.wind_speed, next_rec.wind_speed
+                    ),
+                    wind_speed_80m=self._interpolate_value(
+                        current.wind_speed_80m, next_rec.wind_speed_80m
+                    ),
+                    wind_speed_100m=self._interpolate_value(
+                        current.wind_speed_100m, next_rec.wind_speed_100m
+                    ),
+                    wind_direction=self._interpolate_value(
+                        current.wind_direction, next_rec.wind_direction
+                    ),
+                    wind_direction_80m=self._interpolate_value(
+                        current.wind_direction_80m, next_rec.wind_direction_80m
+                    ),
+                    wind_direction_100m=self._interpolate_value(
+                        current.wind_direction_100m, next_rec.wind_direction_100m
+                    ),
+                    pressure=self._interpolate_value(
+                        current.pressure, next_rec.pressure
+                    ),
+                    precipitation=self._interpolate_value(
+                        current.precipitation, next_rec.precipitation
+                    ),
+                    cloud_cover=self._interpolate_value(
+                        current.cloud_cover, next_rec.cloud_cover
+                    ),
                 )
             )
 
@@ -386,4 +418,3 @@ class WeatherService:
         if resolution_minutes == 15:
             return "icon_d2"
         return None
-

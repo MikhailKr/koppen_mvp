@@ -67,4 +67,3 @@ async def get_current_user(
 # Type alias for dependency injection
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
-

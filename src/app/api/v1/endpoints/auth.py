@@ -108,4 +108,3 @@ async def get_current_user_info(current_user: CurrentUser) -> User:
         Current user data.
     """
     return current_user
-

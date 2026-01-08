@@ -99,7 +99,9 @@ async def create_power_curve(
     return power_curve
 
 
-@router.get("/power-curves/", response_model=list[PowerCurveRead], tags=["power-curves"])
+@router.get(
+    "/power-curves/", response_model=list[PowerCurveRead], tags=["power-curves"]
+)
 async def list_power_curves(
     db: DatabaseSession,
     current_user: CurrentUser,
@@ -111,7 +113,11 @@ async def list_power_curves(
     return list(result.scalars().all())
 
 
-@router.get("/power-curves/{power_curve_id}", response_model=PowerCurveRead, tags=["power-curves"])
+@router.get(
+    "/power-curves/{power_curve_id}",
+    response_model=PowerCurveRead,
+    tags=["power-curves"],
+)
 async def get_power_curve(
     power_curve_id: int,
     db: DatabaseSession,
@@ -125,7 +131,11 @@ async def get_power_curve(
     return power_curve
 
 
-@router.patch("/power-curves/{power_curve_id}", response_model=PowerCurveRead, tags=["power-curves"])
+@router.patch(
+    "/power-curves/{power_curve_id}",
+    response_model=PowerCurveRead,
+    tags=["power-curves"],
+)
 async def update_power_curve(
     power_curve_id: int,
     power_curve_in: PowerCurveUpdate,
@@ -147,7 +157,11 @@ async def update_power_curve(
     return power_curve
 
 
-@router.delete("/power-curves/{power_curve_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["power-curves"])
+@router.delete(
+    "/power-curves/{power_curve_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["power-curves"],
+)
 async def delete_power_curve(
     power_curve_id: int,
     db: DatabaseSession,
@@ -289,7 +303,9 @@ async def create_fleet(
         select(WindTurbineFleet)
         .options(
             selectinload(WindTurbineFleet.location),
-            selectinload(WindTurbineFleet.wind_turbine).selectinload(WindTurbine.power_curve),
+            selectinload(WindTurbineFleet.wind_turbine).selectinload(
+                WindTurbine.power_curve
+            ),
         )
         .where(WindTurbineFleet.id == fleet.id)
     )
@@ -305,12 +321,11 @@ async def list_fleets(
     limit: int = 100,
 ) -> list[WindTurbineFleet]:
     """List all fleets, optionally filtered by wind farm."""
-    query = (
-        select(WindTurbineFleet)
-        .options(
-            selectinload(WindTurbineFleet.location),
-            selectinload(WindTurbineFleet.wind_turbine).selectinload(WindTurbine.power_curve),
-        )
+    query = select(WindTurbineFleet).options(
+        selectinload(WindTurbineFleet.location),
+        selectinload(WindTurbineFleet.wind_turbine).selectinload(
+            WindTurbine.power_curve
+        ),
     )
     if wind_farm_id:
         query = query.where(WindTurbineFleet.wind_farm_id == wind_farm_id)
@@ -318,7 +333,9 @@ async def list_fleets(
     return list(result.scalars().all())
 
 
-@router.patch("/fleets/{fleet_id}", response_model=WindTurbineFleetRead, tags=["fleets"])
+@router.patch(
+    "/fleets/{fleet_id}", response_model=WindTurbineFleetRead, tags=["fleets"]
+)
 async def update_fleet(
     fleet_id: int,
     fleet_in: WindTurbineFleetUpdate,
@@ -326,7 +343,9 @@ async def update_fleet(
     current_user: CurrentUser,
 ) -> WindTurbineFleet:
     """Update a fleet."""
-    result = await db.execute(select(WindTurbineFleet).where(WindTurbineFleet.id == fleet_id))
+    result = await db.execute(
+        select(WindTurbineFleet).where(WindTurbineFleet.id == fleet_id)
+    )
     fleet = result.scalar_one_or_none()
     if not fleet:
         raise HTTPException(status_code=404, detail="Fleet not found")
@@ -341,16 +360,19 @@ async def update_fleet(
     return fleet
 
 
-@router.delete("/fleets/{fleet_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["fleets"])
+@router.delete(
+    "/fleets/{fleet_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["fleets"]
+)
 async def delete_fleet(
     fleet_id: int,
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> None:
     """Delete a fleet."""
-    result = await db.execute(select(WindTurbineFleet).where(WindTurbineFleet.id == fleet_id))
+    result = await db.execute(
+        select(WindTurbineFleet).where(WindTurbineFleet.id == fleet_id)
+    )
     fleet = result.scalar_one_or_none()
     if not fleet:
         raise HTTPException(status_code=404, detail="Fleet not found")
     await db.delete(fleet)
-

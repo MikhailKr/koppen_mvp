@@ -62,7 +62,15 @@ select = [
     "ARG",    # flake8-unused-arguments
     "SIM",    # flake8-simplify
 ]
-ignore = ["E501"]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults (FastAPI Depends pattern)
+    "B904",   # Use `raise from` to specify exception cause (acceptable for some error handling)
+    "E741",   # Ambiguous variable name (false positives for single letter vars in some contexts)
+    "SIM101", # Combine if statements (sometimes less readable)
+    "SIM114", # Combine if statements with same body
+    "ARG001", # Unused function argument (required for FastAPI dependency injection)
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

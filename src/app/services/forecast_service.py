@@ -6,7 +6,7 @@ and wind farm configuration from the database.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
@@ -133,7 +133,7 @@ class ForecastService:
             # Update run status
             run.status = "success"
             run.records_created = records_created
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
 
             # Calculate totals
             total_generation = sum(r.generation for r in forecast_records)
@@ -143,8 +143,12 @@ class ForecastService:
                 wind_farm_id=wind_farm_id,
                 run_id=run.id,
                 records_created=records_created,
-                forecast_start=min(forecast_times) if forecast_times else datetime.now(timezone.utc),
-                forecast_end=max(forecast_times) if forecast_times else datetime.now(timezone.utc),
+                forecast_start=min(forecast_times)
+                if forecast_times
+                else datetime.now(UTC),
+                forecast_end=max(forecast_times)
+                if forecast_times
+                else datetime.now(UTC),
                 weather_model=weather_model,
                 total_forecasted_generation_kwh=total_generation,
             )
@@ -153,7 +157,7 @@ class ForecastService:
             # Update run with error
             run.status = "failed"
             run.error_message = str(e)[:1000]
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
             await self.db.flush()
             raise
 
@@ -176,7 +180,6 @@ class ForecastService:
         Returns:
             ForecastResult with generation statistics.
         """
-        from datetime import timedelta
 
         # Create forecast run record
         run = ForecastRun(
@@ -249,7 +252,7 @@ class ForecastService:
             # Update run status
             run.status = "completed"
             run.records_created = records_created
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
             await self.db.flush()
 
             forecast_times = [r.forecast_time for r in forecast_records]
@@ -258,8 +261,12 @@ class ForecastService:
                 wind_farm_id=wind_farm_id,
                 run_id=run.id,
                 records_created=records_created,
-                forecast_start=min(forecast_times) if forecast_times else datetime.now(timezone.utc),
-                forecast_end=max(forecast_times) if forecast_times else datetime.now(timezone.utc),
+                forecast_start=min(forecast_times)
+                if forecast_times
+                else datetime.now(UTC),
+                forecast_end=max(forecast_times)
+                if forecast_times
+                else datetime.now(UTC),
                 weather_model="historical",
                 total_forecasted_generation_kwh=total_generation,
             )
@@ -267,7 +274,7 @@ class ForecastService:
         except Exception as e:
             run.status = "failed"
             run.error_message = str(e)[:1000]
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
             await self.db.flush()
             raise
 
@@ -296,20 +303,24 @@ class ForecastService:
             )
 
             if response.historical:
-                df = pd.DataFrame([
-                    {
-                        "time": r.time,
-                        "wind_speed": r.wind_speed,
-                        "wind_speed_100m": r.wind_speed_100m,
-                        "wind_direction": r.wind_direction,
-                        "temperature": r.temperature,
-                        "pressure": r.pressure,
-                    }
-                    for r in response.historical
-                ])
+                df = pd.DataFrame(
+                    [
+                        {
+                            "time": r.time,
+                            "wind_speed": r.wind_speed,
+                            "wind_speed_100m": r.wind_speed_100m,
+                            "wind_direction": r.wind_direction,
+                            "temperature": r.temperature,
+                            "pressure": r.pressure,
+                        }
+                        for r in response.historical
+                    ]
+                )
                 df["time"] = pd.to_datetime(df["time"], utc=True)
                 weather_data[loc_id] = df
-                logger.info(f"Got {len(df)} historical weather records for location {loc_id}")
+                logger.info(
+                    f"Got {len(df)} historical weather records for location {loc_id}"
+                )
             else:
                 logger.warning(f"No historical weather data for location {loc_id}")
 
@@ -323,8 +334,9 @@ class ForecastService:
                 selectinload(WindFarm.wind_turbine_fleets)
                 .selectinload(WindTurbineFleet.wind_turbine)
                 .selectinload(WindTurbine.power_curve),
-                selectinload(WindFarm.wind_turbine_fleets)
-                .selectinload(WindTurbineFleet.location),
+                selectinload(WindFarm.wind_turbine_fleets).selectinload(
+                    WindTurbineFleet.location
+                ),
             )
             .where(WindFarm.id == wind_farm_id)
         )
@@ -367,20 +379,24 @@ class ForecastService:
 
             if response.forecast:
                 # Convert to DataFrame
-                df = pd.DataFrame([
-                    {
-                        "time": r.time,
-                        "wind_speed": r.wind_speed,
-                        "wind_speed_100m": r.wind_speed_100m,
-                        "wind_direction": r.wind_direction,
-                        "temperature": r.temperature,
-                        "pressure": r.pressure,
-                    }
-                    for r in response.forecast
-                ])
+                df = pd.DataFrame(
+                    [
+                        {
+                            "time": r.time,
+                            "wind_speed": r.wind_speed,
+                            "wind_speed_100m": r.wind_speed_100m,
+                            "wind_direction": r.wind_direction,
+                            "temperature": r.temperature,
+                            "pressure": r.pressure,
+                        }
+                        for r in response.forecast
+                    ]
+                )
                 df["time"] = pd.to_datetime(df["time"])
                 weather_data[loc_id] = df
-                logger.info(f"Got {len(df)} forecast weather records for location {loc_id}")
+                logger.info(
+                    f"Got {len(df)} forecast weather records for location {loc_id}"
+                )
             else:
                 logger.warning(f"No forecast weather data for location {loc_id}")
 
@@ -396,7 +412,7 @@ class ForecastService:
     ) -> list[WindGenerationForecast]:
         """Calculate power forecasts for each timestamp."""
         forecasts = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Get all unique timestamps from weather data
         all_times = set()
@@ -410,9 +426,9 @@ class ForecastService:
             if isinstance(timestamp, pd.Timestamp):
                 ts = timestamp.to_pydatetime()
                 if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=timezone.utc)
+                    ts = ts.replace(tzinfo=UTC)
             else:
-                ts = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+                ts = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=UTC)
 
             # Skip if too far in future
             hours_ahead = (ts - now).total_seconds() / 3600
@@ -463,8 +479,12 @@ class ForecastService:
                     total_generation += power_kw
 
             # Calculate averages
-            avg_wind_speed = sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
-            avg_wind_dir = sum(wind_directions) / len(wind_directions) if wind_directions else None
+            avg_wind_speed = (
+                sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
+            )
+            avg_wind_dir = (
+                sum(wind_directions) / len(wind_directions) if wind_directions else None
+            )
             avg_temp = sum(temperatures) / len(temperatures) if temperatures else None
 
             forecast = WindGenerationForecast(
@@ -506,7 +526,10 @@ class ForecastService:
             if wind_speed < cut_in:
                 power_kw = 0.0
             elif wind_speed < rated_speed:
-                power_kw = nominal_power_kw * ((wind_speed - cut_in) / (rated_speed - cut_in)) ** 3
+                power_kw = (
+                    nominal_power_kw
+                    * ((wind_speed - cut_in) / (rated_speed - cut_in)) ** 3
+                )
             elif wind_speed <= cut_out:
                 power_kw = nominal_power_kw
             else:
@@ -552,9 +575,9 @@ class ForecastService:
             if isinstance(timestamp, pd.Timestamp):
                 ts = timestamp.to_pydatetime()
                 if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=timezone.utc)
+                    ts = ts.replace(tzinfo=UTC)
             else:
-                ts = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+                ts = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=UTC)
 
             total_generation = 0.0
             wind_speeds: list[float] = []
@@ -595,8 +618,12 @@ class ForecastService:
                     )
                     total_generation += power_kw
 
-            avg_wind_speed = sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
-            avg_wind_dir = sum(wind_directions) / len(wind_directions) if wind_directions else None
+            avg_wind_speed = (
+                sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
+            )
+            avg_wind_dir = (
+                sum(wind_directions) / len(wind_directions) if wind_directions else None
+            )
             avg_temp = sum(temperatures) / len(temperatures) if temperatures else None
 
             forecast = WindGenerationForecast(
@@ -646,7 +673,9 @@ class ForecastService:
         deleted_count = result.rowcount
 
         if deleted_count > 0:
-            logger.info(f"Deleted {deleted_count} old forecasts for wind farm {wind_farm_id}")
+            logger.info(
+                f"Deleted {deleted_count} old forecasts for wind farm {wind_farm_id}"
+            )
 
         return deleted_count
 
@@ -677,4 +706,3 @@ class ForecastService:
             .limit(limit)
         )
         return list(result.scalars().all())
-

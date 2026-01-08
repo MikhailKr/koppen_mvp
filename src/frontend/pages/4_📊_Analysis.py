@@ -1,9 +1,9 @@
 """Compare & Metrics page."""
 
-import streamlit as st
-import pandas as pd
-import numpy as np
 import altair as alt
+import numpy as np
+import pandas as pd
+import streamlit as st
 
 from frontend.api_client import get_api_client
 from frontend.auth import init_session_state
@@ -27,8 +27,10 @@ if not wind_farms:
 
 st.title("📊 Compare & Metrics")
 
-farm_options = {farm['name']: farm for farm in wind_farms}
-selected_farm_name = st.selectbox("🏭 Select Wind Farm", options=list(farm_options.keys()))
+farm_options = {farm["name"]: farm for farm in wind_farms}
+selected_farm_name = st.selectbox(
+    "🏭 Select Wind Farm", options=list(farm_options.keys())
+)
 selected_farm = farm_options[selected_farm_name]
 
 st.divider()
@@ -79,17 +81,26 @@ selected_batch_label = st.selectbox(
 )
 selected_batch = batch_options[selected_batch_label]
 
-selected_forecast_df = all_forecast_df[all_forecast_df["batch_id"] == selected_batch].copy()
+selected_forecast_df = all_forecast_df[
+    all_forecast_df["batch_id"] == selected_batch
+].copy()
 forecast_start = selected_forecast_df["forecast_time"].min()
 forecast_end = selected_forecast_df["forecast_time"].max()
 
 col_info1, col_info2, col_info3 = st.columns(3)
 with col_info1:
-    st.metric("Forecast Period", f"{forecast_start.strftime('%Y-%m-%d')} → {forecast_end.strftime('%Y-%m-%d')}")
+    st.metric(
+        "Forecast Period",
+        f"{forecast_start.strftime('%Y-%m-%d')} → {forecast_end.strftime('%Y-%m-%d')}",
+    )
 with col_info2:
     st.metric("Forecast Points", len(selected_forecast_df))
 with col_info3:
-    model = selected_forecast_df["weather_model"].iloc[0] if "weather_model" in selected_forecast_df.columns else "N/A"
+    model = (
+        selected_forecast_df["weather_model"].iloc[0]
+        if "weather_model" in selected_forecast_df.columns
+        else "N/A"
+    )
     st.metric("Weather Model", model or "N/A")
 
 st.divider()
@@ -134,8 +145,14 @@ if actual_data and forecast_data:
     actual_df["time_hour"] = actual_df["time"].dt.floor("h")
     forecast_df["time_hour"] = forecast_df["time"].dt.floor("h")
 
-    actual_hourly = actual_df.groupby("time_hour").agg({"actual_generation": "mean"}).reset_index()
-    forecast_hourly = forecast_df.groupby("time_hour").agg({"forecast_generation": "mean"}).reset_index()
+    actual_hourly = (
+        actual_df.groupby("time_hour").agg({"actual_generation": "mean"}).reset_index()
+    )
+    forecast_hourly = (
+        forecast_df.groupby("time_hour")
+        .agg({"forecast_generation": "mean"})
+        .reset_index()
+    )
 
     merged_df = pd.merge(actual_hourly, forecast_hourly, on="time_hour", how="inner")
 
@@ -149,7 +166,18 @@ if actual_data and forecast_data:
         rmse = float(np.sqrt(np.mean((actual_vals - forecast_vals) ** 2)))
 
         mask = actual_vals > 0
-        mape = float(np.mean(np.abs((actual_vals[mask] - forecast_vals[mask]) / actual_vals[mask])) * 100) if mask.sum() > 0 else 0.0
+        mape = (
+            float(
+                np.mean(
+                    np.abs(
+                        (actual_vals[mask] - forecast_vals[mask]) / actual_vals[mask]
+                    )
+                )
+                * 100
+            )
+            if mask.sum() > 0
+            else 0.0
+        )
         bias = float(np.mean(forecast_vals - actual_vals))
 
         st.markdown("### 📈 Accuracy Metrics")
@@ -185,42 +213,78 @@ if actual_data and forecast_data:
             var_name="Type",
             value_name="Generation (kW)",
         )
-        chart_melted["Type"] = chart_melted["Type"].map({
-            "actual_generation": "Actual",
-            "forecast_generation": "Forecast",
-        })
+        chart_melted["Type"] = chart_melted["Type"].map(
+            {
+                "actual_generation": "Actual",
+                "forecast_generation": "Forecast",
+            }
+        )
 
-        comparison_chart = alt.Chart(chart_melted).mark_line(strokeWidth=2).encode(
-            x=alt.X("Time:T", title="Time"),
-            y=alt.Y("Generation (kW):Q", title="Generation (kW)"),
-            color=alt.Color("Type:N", scale=alt.Scale(domain=["Actual", "Forecast"], range=["#2ecc71", "#9b59b6"])),
-            strokeDash=alt.condition(alt.datum.Type == "Forecast", alt.value([5, 3]), alt.value([0])),
-        ).properties(height=400).interactive()
+        comparison_chart = (
+            alt.Chart(chart_melted)
+            .mark_line(strokeWidth=2)
+            .encode(
+                x=alt.X("Time:T", title="Time"),
+                y=alt.Y("Generation (kW):Q", title="Generation (kW)"),
+                color=alt.Color(
+                    "Type:N",
+                    scale=alt.Scale(
+                        domain=["Actual", "Forecast"], range=["#2ecc71", "#9b59b6"]
+                    ),
+                ),
+                strokeDash=alt.condition(
+                    alt.datum.Type == "Forecast", alt.value([5, 3]), alt.value([0])
+                ),
+            )
+            .properties(height=400)
+            .interactive()
+        )
 
         st.altair_chart(comparison_chart, use_container_width=True)
 
         st.markdown("### 📊 Error Distribution")
-        merged_df["error"] = merged_df["forecast_generation"] - merged_df["actual_generation"]
+        merged_df["error"] = (
+            merged_df["forecast_generation"] - merged_df["actual_generation"]
+        )
 
-        error_chart = alt.Chart(merged_df).mark_bar(opacity=0.7).encode(
-            x=alt.X("error:Q", bin=alt.Bin(maxbins=30), title="Forecast Error (kW)"),
-            y=alt.Y("count()", title="Frequency"),
-            color=alt.condition(alt.datum.error > 0, alt.value("#e74c3c"), alt.value("#3498db")),
-        ).properties(height=250)
+        error_chart = (
+            alt.Chart(merged_df)
+            .mark_bar(opacity=0.7)
+            .encode(
+                x=alt.X(
+                    "error:Q", bin=alt.Bin(maxbins=30), title="Forecast Error (kW)"
+                ),
+                y=alt.Y("count()", title="Frequency"),
+                color=alt.condition(
+                    alt.datum.error > 0, alt.value("#e74c3c"), alt.value("#3498db")
+                ),
+            )
+            .properties(height=250)
+        )
 
         st.altair_chart(error_chart, use_container_width=True)
 
         with st.expander("📋 View Comparison Data"):
-            display_merged = merged_df[["time_hour", "actual_generation", "forecast_generation", "error"]].copy()
-            display_merged.columns = ["Time", "Actual (kW)", "Forecast (kW)", "Error (kW)"]
-            display_merged["Time"] = display_merged["Time"].dt.strftime("%Y-%m-%d %H:%M")
-            
+            display_merged = merged_df[
+                ["time_hour", "actual_generation", "forecast_generation", "error"]
+            ].copy()
+            display_merged.columns = [
+                "Time",
+                "Actual (kW)",
+                "Forecast (kW)",
+                "Error (kW)",
+            ]
+            display_merged["Time"] = display_merged["Time"].dt.strftime(
+                "%Y-%m-%d %H:%M"
+            )
+
             # Use HTML table for better dark theme compatibility
             st.markdown(
                 display_merged.to_html(index=False, classes="styled-table"),
                 unsafe_allow_html=True,
             )
-            st.markdown("""
+            st.markdown(
+                """
             <style>
             .styled-table {
                 width: 100%;
@@ -247,16 +311,29 @@ if actual_data and forecast_data:
                 background: #334155;
             }
             </style>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
             csv = display_merged.to_csv(index=False)
-            st.download_button("📥 Download CSV", csv, file_name=f"comparison_{selected_farm['id']}.csv", mime="text/csv")
+            st.download_button(
+                "📥 Download CSV",
+                csv,
+                file_name=f"comparison_{selected_farm['id']}.csv",
+                mime="text/csv",
+            )
     else:
-        st.warning("⚠️ No overlapping time points found between actual and forecast data.")
+        st.warning(
+            "⚠️ No overlapping time points found between actual and forecast data."
+        )
 
 elif actual_data and not forecast_data:
     st.info("📭 Click 'Load & Compare' to fetch data for this forecast period.")
 elif forecast_data and not actual_data:
-    st.warning("📭 No actual generation data found. Generate synthetic data first in Data Lab.")
+    st.warning(
+        "📭 No actual generation data found. Generate synthetic data first in Data Lab."
+    )
 else:
-    st.info("👆 Click 'Load & Compare' to compare the selected forecast with actual data.")
+    st.info(
+        "👆 Click 'Load & Compare' to compare the selected forecast with actual data."
+    )

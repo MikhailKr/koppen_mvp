@@ -17,4 +17,3 @@ PREDEFINED_LOCATIONS = [
     {"name": "Stockholm, Sweden", "latitude": 59.3293, "longitude": 18.0686},
     {"name": "Oslo, Norway", "latitude": 59.9139, "longitude": 10.7522},
 ]
-

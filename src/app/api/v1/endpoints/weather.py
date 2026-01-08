@@ -22,7 +22,9 @@ async def get_weather_data(
     model: str = Query("icon_global", description="Weather model to use"),
     past_days: int = Query(7, ge=1, le=90, description="Number of historical days"),
     forecast_days: int = Query(7, ge=1, le=16, description="Number of forecast days"),
-    resolution_minutes: int = Query(60, description="Resolution in minutes (15, 30, 60)"),
+    resolution_minutes: int = Query(
+        60, description="Resolution in minutes (15, 30, 60)"
+    ),
 ) -> WeatherDataOut:
     """Fetch weather data for a location.
 
@@ -90,4 +92,3 @@ async def get_weather_models(current_user: CurrentUser) -> WeatherModelsOut:
 async def get_weather_resolutions(current_user: CurrentUser) -> WeatherResolutionsOut:
     """Get available data resolutions in minutes."""
     return WeatherResolutionsOut(resolutions=WeatherService.get_resolution_options())
-

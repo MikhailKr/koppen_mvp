@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 # Suppress SSL warnings when using verify=False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-OEDB_URL = "https://oep.iks.cs.ovgu.de/api/v0/schema/supply/tables/wind_turbine_library/rows/"
+OEDB_URL = (
+    "https://oep.iks.cs.ovgu.de/api/v0/schema/supply/tables/wind_turbine_library/rows/"
+)
 
 
 def fetch_turbine_data_from_oedb() -> pd.DataFrame:
@@ -65,7 +67,7 @@ def import_wind_turbine_library() -> list[tuple[dict, dict]]:
             else:
                 power = power_curve_values
 
-            power_curve = dict(zip(wind_speed, power))
+            power_curve = dict(zip(wind_speed, power, strict=False))
 
             # Parse hub height
             hub_height_raw = turbine_data.get("hub_height", "100")

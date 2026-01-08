@@ -24,4 +24,3 @@ async def readiness_check() -> dict[str, str]:
     """
     # TODO: Add database connectivity check when PostgreSQL is added
     return {"status": "ready"}
-

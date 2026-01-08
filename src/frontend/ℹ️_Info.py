@@ -19,7 +19,8 @@ inject_css()
 render_sidebar()
 
 # Custom card CSS
-st.markdown("""
+st.markdown(
+    """
 <style>
 .feature-card {
     background: rgba(15, 23, 42, 0.95);
@@ -79,17 +80,22 @@ st.markdown("""
     margin-top: 0.75rem;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Main content
-st.markdown("""
+st.markdown(
+    """
 <div class="hero">
     <p class="hero-title">Wind Power Forecasting</p>
     <p class="hero-subtitle">
         Accurate power generation predictions using advanced weather-based models
     </p>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.divider()
 
@@ -99,66 +105,84 @@ st.markdown("## ✨ Features")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="feature-card">
         <h3>🏭 Wind Farm Management</h3>
-        <p>Configure your wind farms with detailed turbine specifications, 
-        locations, and power curves. Support for multi-turbine fleets 
+        <p>Configure your wind farms with detailed turbine specifications,
+        locations, and power curves. Support for multi-turbine fleets
         at different locations.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col2:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="feature-card">
         <h3>🔮 Generation Forecasting</h3>
-        <p>Generate accurate power output forecasts using real-time 
-        weather data. Compare predictions against actual generation 
+        <p>Generate accurate power output forecasts using real-time
+        weather data. Compare predictions against actual generation
         to measure accuracy.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col3:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="feature-card">
         <h3>🌤️ Weather Integration</h3>
-        <p>Real-time and historical weather data for any location. 
-        Visualize wind speed, direction, temperature and more 
+        <p>Real-time and historical weather data for any location.
+        Visualize wind speed, direction, temperature and more
         with interactive charts.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 col4, col5, col6 = st.columns(3)
 
 with col4:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="feature-card">
         <h3>📈 Power Curve Modeling</h3>
-        <p>Import manufacturer power curves from the wind turbine 
-        library or define custom curves. Accurate modeling of 
+        <p>Import manufacturer power curves from the wind turbine
+        library or define custom curves. Accurate modeling of
         turbine performance.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col5:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="feature-card">
         <h3>🔬 Synthetic Data Lab</h3>
-        <p>Generate realistic synthetic generation data for testing 
-        and validation. Add noise, simulate outages, and explore 
+        <p>Generate realistic synthetic generation data for testing
+        and validation. Add noise, simulate outages, and explore
         different scenarios.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col6:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="feature-card">
         <h3>📊 Accuracy Metrics</h3>
-        <p>Compare forecasts against actual generation data. 
-        Calculate MAE, RMSE, MAPE and bias metrics to track 
+        <p>Compare forecasts against actual generation data.
+        Calculate MAE, RMSE, MAPE and bias metrics to track
         forecast performance.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
@@ -168,26 +192,32 @@ st.markdown("## 🚀 Coming Soon")
 col_soon1, col_soon2, _ = st.columns([1, 1, 1])
 
 with col_soon1:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="coming-soon-card">
         <h3>☀️ Solar Power Forecasting</h3>
-        <p>Predict solar energy generation using irradiance data, 
-        panel specifications, and weather forecasts. Coming in 
+        <p>Predict solar energy generation using irradiance data,
+        panel specifications, and weather forecasts. Coming in
         the next release!</p>
         <span class="coming-soon-badge">🔜 In Development</span>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col_soon2:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="coming-soon-card">
         <h3>🔄 Automated Pipelines</h3>
-        <p>Schedule automatic forecast generation with Airflow. 
-        Set up recurring forecasts and data collection for 
+        <p>Schedule automatic forecast generation with Airflow.
+        Set up recurring forecasts and data collection for
         your wind farms.</p>
         <span class="coming-soon-badge">🔜 In Development</span>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # CTA for non-authenticated users
 if not is_authenticated():
@@ -195,7 +225,9 @@ if not is_authenticated():
     st.markdown("### Get Started")
     col1, col2, _ = st.columns([1, 1, 2])
     with col1:
-        if st.button("Login", use_container_width=True, type="primary", key="cta_login"):
+        if st.button(
+            "Login", use_container_width=True, type="primary", key="cta_login"
+        ):
             st.switch_page("pages/_login.py")
     with col2:
         if st.button("Register", use_container_width=True, key="cta_register"):

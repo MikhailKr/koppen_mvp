@@ -1,11 +1,13 @@
 """Weather observation and forecast page - Presentation layer only."""
 
-import streamlit as st
-import pandas as pd
 import altair as alt
+import pandas as pd
+import streamlit as st
 
 from frontend.api_client import get_api_client
-from frontend.auth import init_session_state, is_authenticated
+from frontend.auth import init_session_state
+from frontend.components import render_sidebar, require_auth
+from frontend.styles import inject_css
 
 
 # ==================== CHART HELPER FUNCTIONS ====================
@@ -27,16 +29,20 @@ def render_combined_chart(
     if not hist_df.empty and column in hist_df.columns:
         hist_data = hist_df[["time", column]].dropna()
         if not hist_data.empty:
-            hist_chart = alt.Chart(hist_data).mark_line(
-                strokeWidth=2,
-                color=hist_color,
-            ).encode(
-                x=alt.X("time:T", title="Time"),
-                y=alt.Y(f"{column}:Q", title=y_title, scale=y_scale),
-                tooltip=[
-                    alt.Tooltip("time:T", title="Time"),
-                    alt.Tooltip(f"{column}:Q", title=y_title, format=".2f"),
-                ],
+            hist_chart = (
+                alt.Chart(hist_data)
+                .mark_line(
+                    strokeWidth=2,
+                    color=hist_color,
+                )
+                .encode(
+                    x=alt.X("time:T", title="Time"),
+                    y=alt.Y(f"{column}:Q", title=y_title, scale=y_scale),
+                    tooltip=[
+                        alt.Tooltip("time:T", title="Time"),
+                        alt.Tooltip(f"{column}:Q", title=y_title, format=".2f"),
+                    ],
+                )
             )
             charts.append(hist_chart)
 
@@ -44,17 +50,21 @@ def render_combined_chart(
     if not forecast_df.empty and column in forecast_df.columns:
         forecast_data = forecast_df[["time", column]].dropna()
         if not forecast_data.empty:
-            forecast_chart = alt.Chart(forecast_data).mark_line(
-                strokeWidth=2,
-                strokeDash=[5, 5],
-                color=forecast_color,
-            ).encode(
-                x=alt.X("time:T", title="Time"),
-                y=alt.Y(f"{column}:Q", title=y_title, scale=y_scale),
-                tooltip=[
-                    alt.Tooltip("time:T", title="Time"),
-                    alt.Tooltip(f"{column}:Q", title=y_title, format=".2f"),
-                ],
+            forecast_chart = (
+                alt.Chart(forecast_data)
+                .mark_line(
+                    strokeWidth=2,
+                    strokeDash=[5, 5],
+                    color=forecast_color,
+                )
+                .encode(
+                    x=alt.X("time:T", title="Time"),
+                    y=alt.Y(f"{column}:Q", title=y_title, scale=y_scale),
+                    tooltip=[
+                        alt.Tooltip("time:T", title="Time"),
+                        alt.Tooltip(f"{column}:Q", title=y_title, format=".2f"),
+                    ],
+                )
             )
             charts.append(forecast_chart)
 
@@ -81,9 +91,17 @@ def records_to_dataframe(records: list[dict]) -> pd.DataFrame:
 
     # Convert numeric columns to proper dtype
     numeric_cols = [
-        "temperature", "temperature_80m", "wind_speed", "wind_speed_80m",
-        "wind_speed_100m", "wind_direction", "wind_direction_80m",
-        "wind_direction_100m", "pressure", "precipitation", "cloud_cover",
+        "temperature",
+        "temperature_80m",
+        "wind_speed",
+        "wind_speed_80m",
+        "wind_speed_100m",
+        "wind_direction",
+        "wind_direction_80m",
+        "wind_direction_100m",
+        "pressure",
+        "precipitation",
+        "cloud_cover",
     ]
     for col in numeric_cols:
         if col in df.columns:
@@ -94,17 +112,65 @@ def records_to_dataframe(records: list[dict]) -> pd.DataFrame:
 
 # ==================== AVAILABLE PARAMETERS ====================
 WEATHER_PARAMS = {
-    "wind_speed": {"label": "Wind Speed @ 10m (m/s)", "hist_color": "#1f77b4", "forecast_color": "#aec7e8"},
-    "wind_speed_80m": {"label": "Wind Speed @ 80m (m/s)", "hist_color": "#2ca02c", "forecast_color": "#98df8a"},
-    "wind_speed_100m": {"label": "Wind Speed @ 100m (m/s)", "hist_color": "#17becf", "forecast_color": "#9edae5"},
-    "wind_direction": {"label": "Wind Direction @ 10m (°)", "hist_color": "#9467bd", "forecast_color": "#c5b0d5", "domain": [0, 360]},
-    "wind_direction_80m": {"label": "Wind Direction @ 80m (°)", "hist_color": "#e377c2", "forecast_color": "#f7b6d2", "domain": [0, 360]},
-    "wind_direction_100m": {"label": "Wind Direction @ 100m (°)", "hist_color": "#bcbd22", "forecast_color": "#dbdb8d", "domain": [0, 360]},
-    "temperature": {"label": "Temperature @ 2m (°C)", "hist_color": "#ff7f0e", "forecast_color": "#ffbb78"},
-    "temperature_80m": {"label": "Temperature @ 80m (°C)", "hist_color": "#d62728", "forecast_color": "#ff9896"},
-    "pressure": {"label": "Pressure MSL (hPa)", "hist_color": "#8c564b", "forecast_color": "#c49c94"},
-    "precipitation": {"label": "Precipitation (mm)", "hist_color": "#7f7f7f", "forecast_color": "#c7c7c7"},
-    "cloud_cover": {"label": "Cloud Cover (%)", "hist_color": "#1f77b4", "forecast_color": "#aec7e8", "domain": [0, 100]},
+    "wind_speed": {
+        "label": "Wind Speed @ 10m (m/s)",
+        "hist_color": "#1f77b4",
+        "forecast_color": "#aec7e8",
+    },
+    "wind_speed_80m": {
+        "label": "Wind Speed @ 80m (m/s)",
+        "hist_color": "#2ca02c",
+        "forecast_color": "#98df8a",
+    },
+    "wind_speed_100m": {
+        "label": "Wind Speed @ 100m (m/s)",
+        "hist_color": "#17becf",
+        "forecast_color": "#9edae5",
+    },
+    "wind_direction": {
+        "label": "Wind Direction @ 10m (°)",
+        "hist_color": "#9467bd",
+        "forecast_color": "#c5b0d5",
+        "domain": [0, 360],
+    },
+    "wind_direction_80m": {
+        "label": "Wind Direction @ 80m (°)",
+        "hist_color": "#e377c2",
+        "forecast_color": "#f7b6d2",
+        "domain": [0, 360],
+    },
+    "wind_direction_100m": {
+        "label": "Wind Direction @ 100m (°)",
+        "hist_color": "#bcbd22",
+        "forecast_color": "#dbdb8d",
+        "domain": [0, 360],
+    },
+    "temperature": {
+        "label": "Temperature @ 2m (°C)",
+        "hist_color": "#ff7f0e",
+        "forecast_color": "#ffbb78",
+    },
+    "temperature_80m": {
+        "label": "Temperature @ 80m (°C)",
+        "hist_color": "#d62728",
+        "forecast_color": "#ff9896",
+    },
+    "pressure": {
+        "label": "Pressure MSL (hPa)",
+        "hist_color": "#8c564b",
+        "forecast_color": "#c49c94",
+    },
+    "precipitation": {
+        "label": "Precipitation (mm)",
+        "hist_color": "#7f7f7f",
+        "forecast_color": "#c7c7c7",
+    },
+    "cloud_cover": {
+        "label": "Cloud Cover (%)",
+        "hist_color": "#1f77b4",
+        "forecast_color": "#aec7e8",
+        "domain": [0, 100],
+    },
 }
 
 
@@ -116,9 +182,6 @@ st.set_page_config(
 )
 
 init_session_state()
-
-from frontend.components import render_sidebar, require_auth
-from frontend.styles import inject_css
 
 inject_css()
 render_sidebar()
@@ -135,7 +198,9 @@ with st.spinner("Loading locations..."):
     locations = api.get_locations()
 
 if not locations:
-    st.warning("⚠️ No locations found. Please add locations first in the Wind Farm Setup page.")
+    st.warning(
+        "⚠️ No locations found. Please add locations first in the Wind Farm Setup page."
+    )
     if st.button("🏭 Go to Wind Farm Setup"):
         st.switch_page("pages/3_🏭_Wind_Farms.py")
     st.stop()
@@ -169,8 +234,7 @@ col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     loc_options = {
-        f"({loc['latitude']:.2f}, {loc['longitude']:.2f})": loc
-        for loc in locations
+        f"({loc['latitude']:.2f}, {loc['longitude']:.2f})": loc for loc in locations
     }
     selected_loc_key = st.selectbox(
         "📍 Location",
@@ -205,7 +269,9 @@ with col3:
 with col4:
     col4a, col4b = st.columns(2)
     with col4a:
-        days_past = st.number_input("Historical (days)", min_value=1, max_value=90, value=7)
+        days_past = st.number_input(
+            "Historical (days)", min_value=1, max_value=90, value=7
+        )
     with col4b:
         max_forecast = 2 if resolution_minutes == 15 else 16
         days_future = st.number_input(
@@ -219,7 +285,9 @@ with col4:
 col_fetch, col_clear = st.columns([3, 1])
 
 with col_fetch:
-    fetch_clicked = st.button("🔄 Fetch Weather Data", type="primary", use_container_width=True)
+    fetch_clicked = st.button(
+        "🔄 Fetch Weather Data", type="primary", use_container_width=True
+    )
 
 with col_clear:
     if st.button("🗑️ Clear", use_container_width=True):
@@ -247,7 +315,9 @@ if fetch_clicked:
         st.session_state.weather_location = selected_loc_key
         st.rerun()
     else:
-        st.error("Failed to fetch weather data. Please check your authentication and try again.")
+        st.error(
+            "Failed to fetch weather data. Please check your authentication and try again."
+        )
 
 st.divider()
 
@@ -266,7 +336,9 @@ if "weather_data" in st.session_state and st.session_state.weather_data:
         st.stop()
 
     # Show info banner
-    info_parts = [f"📍 Location: **{st.session_state.get('weather_location', 'Unknown')}**"]
+    info_parts = [
+        f"📍 Location: **{st.session_state.get('weather_location', 'Unknown')}**"
+    ]
     if model_used:
         info_parts.append(f"Model: **{model_used}**")
     if resolution_info:
@@ -289,9 +361,15 @@ if "weather_data" in st.session_state and st.session_state.weather_data:
     # Legend
     col_legend1, col_legend2, col_legend3 = st.columns([1, 1, 2])
     with col_legend1:
-        st.markdown(f"━━━ **Historical** <span style='color:{param_config['hist_color']}'>●</span>", unsafe_allow_html=True)
+        st.markdown(
+            f"━━━ **Historical** <span style='color:{param_config['hist_color']}'>●</span>",
+            unsafe_allow_html=True,
+        )
     with col_legend2:
-        st.markdown(f"┅┅┅ **Forecast** <span style='color:{param_config['forecast_color']}'>●</span>", unsafe_allow_html=True)
+        st.markdown(
+            f"┅┅┅ **Forecast** <span style='color:{param_config['forecast_color']}'>●</span>",
+            unsafe_allow_html=True,
+        )
 
     # ==================== COMBINED CHART ====================
     chart = render_combined_chart(
@@ -320,10 +398,7 @@ if "weather_data" in st.session_state and st.session_state.weather_data:
         key="data_table_type",
     )
 
-    if data_type == "Historical":
-        display_df = hist_df
-    else:
-        display_df = forecast_df
+    display_df = hist_df if data_type == "Historical" else forecast_df
 
     if not display_df.empty:
         # Format the dataframe for display
@@ -336,7 +411,8 @@ if "weather_data" in st.session_state and st.session_state.weather_data:
             formatted_df.head(500).to_html(index=False, classes="styled-table"),
             unsafe_allow_html=True,
         )
-        st.markdown("""
+        st.markdown(
+            """
         <style>
         .styled-table {
             width: 100%;
@@ -363,7 +439,9 @@ if "weather_data" in st.session_state and st.session_state.weather_data:
             background: #334155;
         }
         </style>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
         if len(formatted_df) > 500:
             st.caption(f"Showing first 500 of {len(formatted_df)} rows")
 

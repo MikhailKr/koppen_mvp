@@ -1,6 +1,6 @@
 """Forecast API endpoints."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -8,13 +8,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, get_db
-from app.models import GranularityEnum, WindGenerationForecast, ForecastRun
+from app.models import ForecastRun, GranularityEnum, WindGenerationForecast
 from app.services.forecast_service import ForecastService
 
 router = APIRouter(prefix="/forecasts", tags=["forecasts"])
 
 
 # ==================== Schemas ====================
+
 
 class ForecastRequest(BaseModel):
     """Request to generate a forecast."""
@@ -75,6 +76,7 @@ class ForecastRunOut(BaseModel):
 
 
 # ==================== Endpoints ====================
+
 
 @router.post(
     "/generate",
@@ -264,25 +266,37 @@ async def request_forecast(
     wind_farm_id: int,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-    horizon_hours: int = Query(default=48, ge=1, le=168, description="Forecast horizon in hours"),
-    start_hours_from_now: int = Query(default=0, ge=0, description="Start offset in hours from now"),
-    granularity: str = Query(default="60min", description="Time resolution: 15min, 30min, or 60min"),
+    horizon_hours: int = Query(
+        default=48, ge=1, le=168, description="Forecast horizon in hours"
+    ),
+    start_hours_from_now: int = Query(
+        default=0, ge=0, description="Start offset in hours from now"
+    ),
+    granularity: str = Query(
+        default="60min", description="Time resolution: 15min, 30min, or 60min"
+    ),
 ) -> list[ForecastRecordOut]:
     """Request forecast data for a wind farm.
-    
+
     This endpoint ALWAYS generates a new forecast on each request (similar to /generate).
     Returns forecast data in the requested format with time horizon and granularity.
     """
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
+
     from sqlalchemy import and_, delete
-    
+
     # Verify ownership
     from app.models import WindFarm
-    farm_stmt = select(WindFarm).where(WindFarm.id == wind_farm_id, WindFarm.user_id == current_user.id)
+
+    farm_stmt = select(WindFarm).where(
+        WindFarm.id == wind_farm_id, WindFarm.user_id == current_user.id
+    )
     farm_result = await db.execute(farm_stmt)
     if not farm_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Wind farm not found or access denied")
-    
+        raise HTTPException(
+            status_code=404, detail="Wind farm not found or access denied"
+        )
+
     # Map granularity string to enum
     granularity_map = {
         "15min": GranularityEnum.min_15,
@@ -290,14 +304,14 @@ async def request_forecast(
         "60min": GranularityEnum.min_60,
     }
     gran_enum = granularity_map.get(granularity, GranularityEnum.min_60)
-    
+
     # Always generate new forecast - delete old forecasts first
     await db.execute(
         delete(WindGenerationForecast).where(
             WindGenerationForecast.wind_farm_id == wind_farm_id
         )
     )
-    
+
     # Generate new forecast
     service = ForecastService(db)
     try:
@@ -310,26 +324,32 @@ async def request_forecast(
         await db.commit()
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to generate forecast: {str(e)}")
-    
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate forecast: {str(e)}"
+        )
+
     # Calculate time range for filtering
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     start_time = now + timedelta(hours=start_hours_from_now)
     end_time = start_time + timedelta(hours=horizon_hours)
-    
+
     # Retrieve the newly generated forecasts matching the requested time range and granularity
-    query = select(WindGenerationForecast).where(
-        and_(
-            WindGenerationForecast.wind_farm_id == wind_farm_id,
-            WindGenerationForecast.forecast_time >= start_time,
-            WindGenerationForecast.forecast_time <= end_time,
-            WindGenerationForecast.granularity == gran_enum,
+    query = (
+        select(WindGenerationForecast)
+        .where(
+            and_(
+                WindGenerationForecast.wind_farm_id == wind_farm_id,
+                WindGenerationForecast.forecast_time >= start_time,
+                WindGenerationForecast.forecast_time <= end_time,
+                WindGenerationForecast.granularity == gran_enum,
+            )
         )
-    ).order_by(WindGenerationForecast.forecast_time.asc())
-    
+        .order_by(WindGenerationForecast.forecast_time.asc())
+    )
+
     result = await db.execute(query)
     forecasts = list(result.scalars().all())
-    
+
     return forecasts[:1000]  # Limit to 1000 records
 
 
@@ -351,4 +371,3 @@ async def delete_forecasts(
         )
     )
     await db.commit()
-

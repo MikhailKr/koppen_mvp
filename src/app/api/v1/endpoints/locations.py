@@ -88,4 +88,3 @@ async def delete_location(
         raise HTTPException(status_code=404, detail="Location not found")
 
     await db.delete(location)
-

@@ -48,7 +48,9 @@ class APIClient:
         except httpx.RequestError:
             return None
 
-    def register(self, email: str, password: str, full_name: str | None = None) -> dict | None:
+    def register(
+        self, email: str, password: str, full_name: str | None = None
+    ) -> dict | None:
         """Register a new user.
 
         Args:
@@ -126,7 +128,9 @@ class APIClient:
         except httpx.RequestError:
             return []
 
-    def create_wind_farm(self, name: str, description: str | None = None) -> dict | None:
+    def create_wind_farm(
+        self, name: str, description: str | None = None
+    ) -> dict | None:
         """Create a new wind farm."""
         try:
             response = httpx.post(
@@ -155,7 +159,10 @@ class APIClient:
             elif response.status_code == 404:
                 return {"success": False, "error": "Farm not found"}
             else:
-                return {"success": False, "error": f"Server error: {response.status_code}"}
+                return {
+                    "success": False,
+                    "error": f"Server error: {response.status_code}",
+                }
         except httpx.RequestError as e:
             return {"success": False, "error": str(e)}
 
@@ -201,7 +208,9 @@ class APIClient:
     def get_wind_turbines(self) -> list[dict]:
         """Get all wind turbines."""
         try:
-            response = httpx.get(f"{self.base_url}/wind-turbines/", headers=self.headers)
+            response = httpx.get(
+                f"{self.base_url}/wind-turbines/", headers=self.headers
+            )
             if response.status_code == 200:
                 return response.json()
             return []
@@ -232,7 +241,11 @@ class APIClient:
             )
             if response.status_code == 201:
                 return response.json()
-            return {"error": True, "status": response.status_code, "detail": response.text}
+            return {
+                "error": True,
+                "status": response.status_code,
+                "detail": response.text,
+            }
         except httpx.RequestError as e:
             return {"error": True, "detail": str(e)}
 
@@ -352,7 +365,9 @@ class APIClient:
             Dictionary mapping model codes to display names.
         """
         try:
-            response = httpx.get(f"{self.base_url}/weather/models", headers=self.headers)
+            response = httpx.get(
+                f"{self.base_url}/weather/models", headers=self.headers
+            )
             if response.status_code == 200:
                 return response.json().get("models", {})
             return {}
@@ -366,7 +381,9 @@ class APIClient:
             List of available resolutions in minutes.
         """
         try:
-            response = httpx.get(f"{self.base_url}/weather/resolutions", headers=self.headers)
+            response = httpx.get(
+                f"{self.base_url}/weather/resolutions", headers=self.headers
+            )
             if response.status_code == 200:
                 return response.json().get("resolutions", [60])
             return [60]
@@ -404,7 +421,11 @@ class APIClient:
             )
             if response.status_code == 201:
                 return response.json()
-            return {"error": True, "status": response.status_code, "detail": response.text}
+            return {
+                "error": True,
+                "status": response.status_code,
+                "detail": response.text,
+            }
         except httpx.RequestError as e:
             return {"error": True, "detail": str(e)}
 
@@ -552,13 +573,13 @@ class APIClient:
         granularity: str = "60min",
     ) -> list[dict]:
         """Request forecast data for a wind farm.
-        
+
         Args:
             wind_farm_id: The ID of the wind farm
             horizon_hours: Forecast horizon in hours (1-168)
             start_hours_from_now: Start offset in hours from now (0-168)
             granularity: Time resolution - "15min", "30min", or "60min"
-            
+
         Returns:
             List of forecast records
         """
@@ -590,11 +611,11 @@ class APIClient:
         conversation_history: list[dict] | None = None,
     ) -> dict:
         """Send a message to the AI agent.
-        
+
         Args:
             message: The user's message.
             conversation_history: Previous messages in the conversation.
-            
+
         Returns:
             Response from the AI agent.
         """
@@ -620,4 +641,3 @@ def get_api_client() -> APIClient:
     """Get API client with current session token."""
     token = st.session_state.get("token")
     return APIClient(token=token)
-

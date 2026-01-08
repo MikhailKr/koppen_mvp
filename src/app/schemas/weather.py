@@ -43,4 +43,3 @@ class WeatherResolutionsOut(BaseModel):
     """Available resolutions."""
 
     resolutions: list[int]
-

@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Boolean,
     DateTime,
     Enum,
     Float,
@@ -101,21 +100,15 @@ class ForecastRun(Base):
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default="running"
     )  # running, success, failed
-    records_created: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
-    forecast_hours: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=48
-    )
-    weather_model: Mapped[str | None] = mapped_column(
-        String(100), nullable=True
-    )
-    error_message: Mapped[str | None] = mapped_column(
-        String(1000), nullable=True
-    )
+    records_created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    forecast_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=48)
+    weather_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Relationships
-    wind_farm: Mapped["WindFarm"] = relationship("WindFarm", back_populates="forecast_runs")
+    wind_farm: Mapped["WindFarm"] = relationship(
+        "WindFarm", back_populates="forecast_runs"
+    )
 
     def __str__(self) -> str:
         return f"ForecastRun(id={self.id}, status={self.status})"

@@ -6,7 +6,7 @@ to generate synthetic power generation data for wind farms.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,6 @@ from app.models import (
     WindFarmGenerationRecord,
     WindTurbine,
     WindTurbineFleet,
-    WindTurbineGenerationRecord,
 )
 from app.services.weather_service import WeatherService
 
@@ -100,8 +99,8 @@ class SyntheticGenerationService:
 
         # Convert granularity to minutes for weather API
         granularity_to_minutes = {
-            GranularityEnum.min_1: 15,   # Open-Meteo minimum is 15 min
-            GranularityEnum.min_5: 15,   # Open-Meteo minimum is 15 min
+            GranularityEnum.min_1: 15,  # Open-Meteo minimum is 15 min
+            GranularityEnum.min_5: 15,  # Open-Meteo minimum is 15 min
             GranularityEnum.min_15: 15,
             GranularityEnum.min_30: 60,  # Use hourly for 30min
             GranularityEnum.min_60: 60,
@@ -158,8 +157,9 @@ class SyntheticGenerationService:
                 selectinload(WindFarm.wind_turbine_fleets)
                 .selectinload(WindTurbineFleet.wind_turbine)
                 .selectinload(WindTurbine.power_curve),
-                selectinload(WindFarm.wind_turbine_fleets)
-                .selectinload(WindTurbineFleet.location),
+                selectinload(WindFarm.wind_turbine_fleets).selectinload(
+                    WindTurbineFleet.location
+                ),
             )
             .where(WindFarm.id == wind_farm_id)
         )
@@ -200,17 +200,19 @@ class SyntheticGenerationService:
 
             if response.historical:
                 # Convert to DataFrame
-                df = pd.DataFrame([
-                    {
-                        "time": r.time,
-                        "wind_speed": r.wind_speed,
-                        "wind_speed_100m": r.wind_speed_100m,
-                        "wind_direction": r.wind_direction,
-                        "temperature": r.temperature,
-                        "pressure": r.pressure,
-                    }
-                    for r in response.historical
-                ])
+                df = pd.DataFrame(
+                    [
+                        {
+                            "time": r.time,
+                            "wind_speed": r.wind_speed,
+                            "wind_speed_100m": r.wind_speed_100m,
+                            "wind_direction": r.wind_direction,
+                            "temperature": r.temperature,
+                            "pressure": r.pressure,
+                        }
+                        for r in response.historical
+                    ]
+                )
                 df["time"] = pd.to_datetime(df["time"])
                 weather_data[loc_id] = df
                 logger.info(f"Got {len(df)} weather records for location {loc_id}")
@@ -251,7 +253,10 @@ class SyntheticGenerationService:
                 # Check for random outages
                 if config.random_outages:
                     # Decrement outage counter
-                    if fleet.id in fleet_outage_remaining and fleet_outage_remaining[fleet.id] > 0:
+                    if (
+                        fleet.id in fleet_outage_remaining
+                        and fleet_outage_remaining[fleet.id] > 0
+                    ):
                         fleet_outage_remaining[fleet.id] -= 1
                         fleet_statuses[str(fleet.id)] = "off"
                         continue
@@ -315,13 +320,17 @@ class SyntheticGenerationService:
             if isinstance(timestamp, pd.Timestamp):
                 ts = timestamp.to_pydatetime()
                 if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=timezone.utc)
+                    ts = ts.replace(tzinfo=UTC)
             else:
-                ts = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+                ts = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=UTC)
 
             # Calculate average weather values
-            avg_wind_speed = sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
-            avg_wind_dir = sum(wind_directions) / len(wind_directions) if wind_directions else None
+            avg_wind_speed = (
+                sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
+            )
+            avg_wind_dir = (
+                sum(wind_directions) / len(wind_directions) if wind_directions else None
+            )
             avg_temp = sum(temperatures) / len(temperatures) if temperatures else None
 
             record = WindFarmGenerationRecord(
@@ -368,7 +377,10 @@ class SyntheticGenerationService:
                 power_kw = 0.0
             elif wind_speed < rated_speed:
                 # Cubic relationship in this region
-                power_kw = nominal_power_kw * ((wind_speed - cut_in) / (rated_speed - cut_in)) ** 3
+                power_kw = (
+                    nominal_power_kw
+                    * ((wind_speed - cut_in) / (rated_speed - cut_in)) ** 3
+                )
             elif wind_speed <= cut_out:
                 power_kw = nominal_power_kw
             else:
@@ -442,4 +454,3 @@ class SyntheticGenerationService:
 
         logger.info(f"Saved {len(records)} synthetic generation records")
         return len(records)
-

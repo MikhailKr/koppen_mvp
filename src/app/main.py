@@ -1,7 +1,8 @@
 """FastAPI application entry point."""
 
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
+
 from app.api.v1.router import api_router
 from app.core.config import settings
 
@@ -42,6 +43,7 @@ async def root() -> dict[str, str]:
         "version": settings.app_version,
         "docs": "/docs",
     }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

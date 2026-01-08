@@ -36,6 +36,3 @@ def require_auth() -> bool:
         st.stop()
         return False
     return True
-
-
-

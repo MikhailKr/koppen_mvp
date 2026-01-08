@@ -25,8 +25,10 @@ if not wind_farms:
 st.title("🔬 Data Lab")
 st.caption("Generate synthetic data for testing and validation")
 
-farm_options = {farm['name']: farm for farm in wind_farms}
-selected_farm_name = st.selectbox("🏭 Select Wind Farm", options=list(farm_options.keys()))
+farm_options = {farm["name"]: farm for farm in wind_farms}
+selected_farm_name = st.selectbox(
+    "🏭 Select Wind Farm", options=list(farm_options.keys())
+)
 selected_farm = farm_options[selected_farm_name]
 
 st.divider()
@@ -44,7 +46,9 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("**⚙️ Basic Settings**")
-    days_back = st.slider("Days of Historical Data", min_value=1, max_value=365, value=30)
+    days_back = st.slider(
+        "Days of Historical Data", min_value=1, max_value=365, value=30
+    )
     granularity = st.selectbox(
         "Time Resolution",
         options=["1min", "5min", "15min", "30min", "60min"],
@@ -55,14 +59,24 @@ with col2:
     st.markdown("**🎲 Randomness Settings**")
     add_noise = st.checkbox("Add Gaussian Noise", value=True)
     if add_noise:
-        noise_std = st.slider("Noise Std Dev (%)", min_value=1.0, max_value=30.0, value=5.0)
+        noise_std = st.slider(
+            "Noise Std Dev (%)", min_value=1.0, max_value=30.0, value=5.0
+        )
     else:
         noise_std = 5.0
 
     random_outages = st.checkbox("Simulate Random Outages", value=False)
     if random_outages:
-        outage_prob = st.slider("Outage Probability (per hour)", min_value=0.001, max_value=0.1, value=0.01, format="%.3f")
-        outage_duration = st.slider("Avg Outage Duration (hours)", min_value=1, max_value=48, value=4)
+        outage_prob = st.slider(
+            "Outage Probability (per hour)",
+            min_value=0.001,
+            max_value=0.1,
+            value=0.01,
+            format="%.3f",
+        )
+        outage_duration = st.slider(
+            "Avg Outage Duration (hours)", min_value=1, max_value=48, value=4
+        )
     else:
         outage_prob = 0.01
         outage_duration = 4
@@ -99,7 +113,9 @@ if st.button("⚡ Generate Synthetic Data", type="primary", use_container_width=
         st.session_state.pop("generation_data", None)
         st.toast("Go to 'Generation Data' page to view the generated data!")
     else:
-        error_detail = result.get("detail", "Unknown error") if result else "Failed to connect"
+        error_detail = (
+            result.get("detail", "Unknown error") if result else "Failed to connect"
+        )
         st.error(f"❌ Failed to generate data: {error_detail}")
 
 # Historical Forecast Section
@@ -130,7 +146,9 @@ with hcol2:
         key="hist_forecast_granularity",
     )
 
-if st.button("⚡ Generate Historical Forecast", type="primary", use_container_width=True):
+if st.button(
+    "⚡ Generate Historical Forecast", type="primary", use_container_width=True
+):
     with st.spinner("Generating historical forecasts... This may take a minute..."):
         result = api.generate_historical_forecast(
             wind_farm_id=selected_farm["id"],
@@ -152,6 +170,9 @@ if st.button("⚡ Generate Historical Forecast", type="primary", use_container_w
         st.session_state.pop("forecast_data", None)
         st.toast("Go to 'Analysis' page to compare with actual data!")
     else:
-        error_detail = result.get("detail", result.get("error", "Unknown error")) if result else "Connection failed"
+        error_detail = (
+            result.get("detail", result.get("error", "Unknown error"))
+            if result
+            else "Connection failed"
+        )
         st.error(f"❌ Failed to generate historical forecast: {error_detail}")
-

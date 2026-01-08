@@ -8,8 +8,9 @@ import os
 from datetime import datetime, timedelta
 
 import requests
-from airflow import DAG
 from airflow.operators.python import PythonOperator
+
+from airflow import DAG
 
 # API Configuration
 API_BASE_URL = os.getenv("API_BASE_URL", "http://app:8000")
@@ -27,7 +28,7 @@ default_args = {
 
 def get_auth_token() -> str:
     """Get authentication token from the API.
-    
+
     For production, use a service account or API key.
     For MVP, we'll use a default user.
     """
@@ -72,7 +73,7 @@ def generate_forecast_for_farm(
 ) -> dict:
     """Generate forecast for a single wind farm."""
     headers = {"Authorization": f"Bearer {token}"} if token else {}
-    
+
     try:
         response = requests.post(
             f"{API_BASE_URL}/api/v1/forecasts/generate",
@@ -85,16 +86,20 @@ def generate_forecast_for_farm(
             },
             timeout=120,  # Forecast generation can take time
         )
-        
+
         if response.status_code in (200, 202):
             result = response.json()
-            print(f"✓ Wind farm {wind_farm_id}: Created {result.get('records_created', 0)} forecast records")
+            print(
+                f"✓ Wind farm {wind_farm_id}: Created {result.get('records_created', 0)} forecast records"
+            )
             return result
         else:
-            print(f"✗ Wind farm {wind_farm_id}: Failed with status {response.status_code}")
+            print(
+                f"✗ Wind farm {wind_farm_id}: Failed with status {response.status_code}"
+            )
             print(f"  Response: {response.text}")
             return {"error": response.text}
-            
+
     except Exception as e:
         print(f"✗ Wind farm {wind_farm_id}: Exception - {e}")
         return {"error": str(e)}
@@ -102,65 +107,67 @@ def generate_forecast_for_farm(
 
 def run_forecast_pipeline(**context) -> None:
     """Main forecast pipeline task.
-    
+
     Fetches all wind farms and generates forecasts for each one.
     """
     print("=" * 60)
     print("Starting Wind Generation Forecast Pipeline")
     print(f"Execution time: {context.get('execution_date', datetime.now())}")
     print("=" * 60)
-    
+
     # Get authentication token
     token = get_auth_token()
     if not token:
         print("Warning: Running without authentication token")
-    
+
     # Fetch all wind farms
     wind_farms = get_wind_farms(token)
-    
+
     if not wind_farms:
         print("No wind farms found. Exiting.")
         return
-    
+
     print(f"Found {len(wind_farms)} wind farm(s)")
-    
+
     # Configuration
     forecast_hours = 48  # 2 days ahead
     weather_model = "best_match"  # Open-Meteo best match
-    
+
     # Generate forecasts for each wind farm
     results = []
     for farm in wind_farms:
         farm_id = farm.get("id")
         farm_name = farm.get("name", "Unknown")
-        
+
         print(f"\n--- Processing: {farm_name} (ID: {farm_id}) ---")
-        
+
         result = generate_forecast_for_farm(
             wind_farm_id=farm_id,
             token=token,
             forecast_hours=forecast_hours,
             weather_model=weather_model,
         )
-        results.append({
-            "farm_id": farm_id,
-            "farm_name": farm_name,
-            "result": result,
-        })
-    
+        results.append(
+            {
+                "farm_id": farm_id,
+                "farm_name": farm_name,
+                "result": result,
+            }
+        )
+
     # Summary
     print("\n" + "=" * 60)
     print("Pipeline Summary")
     print("=" * 60)
-    
+
     successful = sum(1 for r in results if "error" not in r["result"])
     failed = len(results) - successful
     total_records = sum(
-        r["result"].get("records_created", 0) 
-        for r in results 
+        r["result"].get("records_created", 0)
+        for r in results
         if "error" not in r["result"]
     )
-    
+
     print(f"Wind Farms Processed: {len(results)}")
     print(f"Successful: {successful}")
     print(f"Failed: {failed}")
@@ -178,15 +185,9 @@ with DAG(
     catchup=False,
     tags=["forecasting", "wind-power", "koppen"],
 ) as dag:
-    
     # Main forecast task
     forecast_task = PythonOperator(
         task_id="generate_forecasts",
         python_callable=run_forecast_pipeline,
         provide_context=True,
     )
-    
-    forecast_task
-
-
-

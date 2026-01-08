@@ -5,15 +5,15 @@ from pathlib import Path
 
 # Color palette - inspired by wind/energy themes
 COLORS = {
-    "primary": "#0ea5e9",      # Sky blue
+    "primary": "#0ea5e9",  # Sky blue
     "primary_dark": "#0284c7",
-    "secondary": "#10b981",    # Emerald green
-    "accent": "#f59e0b",       # Amber
-    "background": "#0f172a",   # Slate 900
-    "surface": "#1e293b",      # Slate 800
-    "surface_light": "#334155", # Slate 700
-    "text": "#f8fafc",         # Slate 50
-    "text_muted": "#94a3b8",   # Slate 400
+    "secondary": "#10b981",  # Emerald green
+    "accent": "#f59e0b",  # Amber
+    "background": "#0f172a",  # Slate 900
+    "surface": "#1e293b",  # Slate 800
+    "surface_light": "#334155",  # Slate 700
+    "text": "#f8fafc",  # Slate 50
+    "text_muted": "#94a3b8",  # Slate 400
     "success": "#22c55e",
     "warning": "#f59e0b",
     "error": "#ef4444",
@@ -28,7 +28,7 @@ def get_background_image_base64() -> str:
     global _CACHED_BG_IMAGE
     if _CACHED_BG_IMAGE is not None:
         return _CACHED_BG_IMAGE
-    
+
     try:
         image_path = Path(__file__).parent / "assets" / "image1.png"
         if image_path.exists():
@@ -424,4 +424,5 @@ GLOBAL_CSS = get_global_css(include_background=True)
 def inject_css(include_background: bool = True) -> None:
     """Inject global CSS into the Streamlit app."""
     import streamlit as st
+
     st.markdown(get_global_css(include_background), unsafe_allow_html=True)
