@@ -411,9 +411,11 @@ elif current_step == 2:
                         key="del_idx",
                     )
                 with del_cols[1]:
-                      if len(st.session_state.manual_curve_points) > 3 and st.button("🗑️ Delete Point", key="delete_point"):
-                          st.session_state.manual_curve_points.pop(del_idx - 1)
-                          st.rerun()
+                    if len(st.session_state.manual_curve_points) > 3 and st.button(
+                        "🗑️ Delete Point", key="delete_point"
+                    ):
+                        st.session_state.manual_curve_points.pop(del_idx - 1)
+                        st.rerun()
 
                 # Build the default_curve from manual points
                 default_curve = {
