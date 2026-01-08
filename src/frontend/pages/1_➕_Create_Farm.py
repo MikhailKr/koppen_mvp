@@ -410,7 +410,7 @@ elif current_step == 2:
                         value=1,
                         key="del_idx",
                     )
-                  with del_cols[1]:
+                with del_cols[1]:
                       if len(st.session_state.manual_curve_points) > 3 and st.button("🗑️ Delete Point", key="delete_point"):
                           st.session_state.manual_curve_points.pop(del_idx - 1)
                           st.rerun()
