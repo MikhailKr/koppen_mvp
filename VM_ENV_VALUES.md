@@ -129,9 +129,13 @@ docker-compose -f docker-compose.prod.yml --env-file .env up -d
 ### Database Host Configuration
 
 When using PostgreSQL in Docker (recommended):
-- **POSTGRES_HOST** = `db` (this is the service name in docker-compose)
+- **POSTGRES_HOST** = `db` (this is the Docker service name, NOT your VM_HOST)
 - **POSTGRES_PORT** = `5432` (internal Docker network port)
 - These are **already set** in `docker-compose.prod.yml` - you don't need to set them
+
+**Important:** `POSTGRES_HOST` is different from `VM_HOST`:
+- `POSTGRES_HOST` = `db` (Docker service name for container-to-container communication)
+- `VM_HOST` = your VM's IP address (for SSH/deployment only, not for database)
 
 The `docker-compose.prod.yml` file automatically:
 - Creates the PostgreSQL container
