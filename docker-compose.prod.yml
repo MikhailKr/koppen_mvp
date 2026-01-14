@@ -40,7 +40,6 @@ services:
         condition: service_healthy
     networks:
       - koppen-network
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   frontend:
     image: ${IMAGE_REGISTRY:-cr.yandex}/${YC_REGISTRY_ID}/koppen-frontend:${IMAGE_VERSION:-latest}
