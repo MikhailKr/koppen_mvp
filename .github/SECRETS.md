@@ -17,7 +17,9 @@ This document lists all the secrets that need to be configured in GitHub reposit
 - **`DB_PASSWORD`**: PostgreSQL database password
 - **`DB_USER`**: PostgreSQL database username (default: postgres)
 - **`DB_NAME`**: PostgreSQL database name (default: koppen_mvp)
-- **`DB_HOST`**: Database host (for external databases, otherwise not used)
+- **`DB_HOST`**: Database host (optional, only for external databases - NOT needed when using Docker)
+  
+  **Note:** When using PostgreSQL in Docker (recommended), `POSTGRES_HOST` is hardcoded as `db` in docker-compose.prod.yml. You don't need to set `DB_HOST` or `POSTGRES_HOST` in secrets.
 
 ### Application Secrets
 - **`JWT_SECRET_KEY`**: Secret key for JWT token generation (should be a strong random string)
