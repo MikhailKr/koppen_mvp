@@ -184,7 +184,7 @@ jobs:
             export GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
             export API_BASE_URL=${{ secrets.API_BASE_URL }}
             export IMAGE_VERSION=${{ github.event.inputs.version || 'latest' }}
-            export IMAGE_REGISTRY=${{ env.REGISTRY }}/${{ secrets.YC_REGISTRY_ID }}
+            export IMAGE_REGISTRY=${{ env.REGISTRY }}
 
             # Stop the current containers
             docker-compose -f ~/docker-compose.prod.yml down || true
